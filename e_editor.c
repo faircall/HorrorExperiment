@@ -1,3 +1,7 @@
+#define _CRT_SECURE_NO_WARNINGS
+#define STB_IMAGE_WRITE_IMPLMENTATION
+#include "stb_image_write.h"
+
 #include "e_editor.h"
 
 /**
@@ -11,7 +15,14 @@
  * 
  * */
 
-void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game_resources, bool *g_running, EDITOR_STATE *editor_state);
+typedef struct {
+    int grid_x;
+    int grid_y;
+} Mouse_Grid_Result;
+
+Mouse_Grid_Result get_mouse_grid(int mouse_x, int mouse_y, uint grid_width, uint grid_height);
+
+void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game_resources, int32 *mouse_x, int32 *mouse_y, bool *g_running, EDITOR_STATE *editor_state);
 
 void collision_update_and_render(SDL_Renderer *sdl_renderer, SDL_Rect **editor_rect_list, uint32 *num_rects, uint32 *rect_storage, int32 *mouse_x, int32 *mouse_y, bool *g_running, char *argv, EDITOR_STATE *editor_state, bool *want_save, bool *want_load);
 
@@ -35,7 +46,7 @@ void editor_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game_res
     }
 
     if (editor_state == EDITOR_NORMAL_MAP) {
-	normal_map_update_and_render(sdl_renderer, game_resources, g_running, &editor_state);
+	normal_map_update_and_render(sdl_renderer, game_resources, mouse_x, mouse_y, g_running, &editor_state);
     }
 
 
@@ -219,13 +230,40 @@ void collision_update_and_render(SDL_Renderer *sdl_renderer, SDL_Rect **editor_r
 
 }
 
-void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game_resources, bool *g_running, EDITOR_STATE *editor_state)
+Mouse_Grid_Result get_mouse_grid(int32 mouse_x, int32 mouse_y, int32 grid_spacing_x, int32 grid_spacing_y, int32 grid_start_x, int32 grid_start_y, int32 grid_end_x, int32 grid_end_y)
+{
+    /// a bit more think required
+    Mouse_Grid_Result result;
+    if (mouse_x < grid_start_x || mouse_y < grid_start_y || mouse_x > grid_end_x || mouse_y > grid_end_y) {
+	result.grid_x = -1;
+	result.grid_y = -1;
+    } else {
+    
+	//we actually want to grid spacing...also
+	result.grid_x = (mouse_x - grid_start_x) / grid_spacing_x;
+	result.grid_y = (mouse_y - grid_start_y) / grid_spacing_y;
+    }
+
+    
+    return result;
+}
+
+void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game_resources, int32 *mouse_x, int32 *mouse_y, bool *g_running, EDITOR_STATE *editor_state)
 {
     SDL_Event event;
     static int texture_counter = 0;
 
+    static bool selecting = false;
 
+    static vec2 selecting_start = {0.0f, 0.0f};
+    static bool initialsed_normal_buffer = false;
+    static bool *normal_buffer = NULL;
     
+
+
+    //we could make a static pointer here
+    //try it out for size 
+    //static bool *normal_map_buffer = (bool*)malloc(sizeof());;
 
     while (SDL_PollEvent(&event)) {
 	if (event.type == SDL_QUIT) {
@@ -244,7 +282,38 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 		texture_counter--;
 	    }
 	}
+
+	if (event.type == SDL_MOUSEMOTION) {
+	    SDL_GetMouseState(mouse_x, mouse_y);
+	}
+	if (event.type == SDL_MOUSEBUTTONUP) {
+
+	    
+	    if (event.button.button == SDL_BUTTON_LEFT) {
+		//make a vector from mouse pos
+		if (!selecting) {
+		    selecting = true;
+		    selecting_start = vec2_init(*mouse_x, *mouse_y);		    
+		} else {
+		    selecting = false;
+		}
+	    }
+	    else if (event.button.button == SDL_BUTTON_RIGHT) {
+		
+	    }
+	}
     }
+
+    if (selecting) {
+	
+    }
+
+    //need some kind of a select region function
+
+    //how to select a particular cell??
+
+    
+    
 
     if (texture_counter >= NUM_TEX) {
 	texture_counter = 0;
@@ -256,14 +325,60 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
     //texture_counter = texture_counter % NUM_TEX;
 
     TextureResult texture_result = game_resources->textures[texture_counter];
-    real32 scale = 3.0f;
-    real32 dest_x = SCREENWIDTH/2.0f - scale*texture_result.im_width/2.0f;
-    real32 dest_y = SCREENHEIGHT/2.0f - scale*texture_result.im_height/2.0f;
+    //get grid-line info to render grid lines
+    int32 scale = 8;
+    //why minus
+    int32 dest_x = (SCREENWIDTH/2) - (scale*texture_result.im_width/2);
+    int32 dest_y = (SCREENHEIGHT/2) - (scale*texture_result.im_height/2);
+    
+    uint32 grid_width = texture_result.im_width * scale;
+    uint32 grid_height = texture_result.im_height * scale;
+
+    uint32 grid_start_x = dest_x;
+    uint32 grid_end_x = grid_start_x + grid_width;
+
+    uint32 grid_start_y = dest_y;
+    uint32 grid_end_y = dest_y + grid_height;
+
+    uint32 grid_lines_x = texture_result.im_width;
+    uint32 grid_lines_y = texture_result.im_height;
+
+    int mouse_grid_x, mouse_grid_y;
+
+    Mouse_Grid_Result grid_result = get_mouse_grid(*mouse_x, *mouse_y, scale, scale, grid_start_x, grid_start_y, grid_end_x, grid_end_y);
+    mouse_grid_x = grid_result.grid_x;
+    mouse_grid_y = grid_result.grid_y;
+    printf("grid x %d, grid y %d \n", mouse_grid_x, mouse_grid_y);
+
+    #if 0
+    if (!initialised_normal_buffer) {
+	initialsed_normal_buffer = true;
+	normal_buffer = (bool*)malloc(sizeof(bool) * texture_result.im_width * texture_result.im_height);
+    }
+    #endif
+    
     SDL_Rect dest_rect = rect_init(dest_x, dest_y, scale*texture_result.im_width, scale*texture_result.im_height);
 
     SDL_SetRenderDrawColor(sdl_renderer, 0x0f, 0xff, 0xaf, 0xff);
     SDL_RenderClear(sdl_renderer);
     SDL_RenderCopy(sdl_renderer, texture_result.texture, NULL, &dest_rect);
+    SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0x00, 0x00, 0xff);
+
+    //there was some rounding error here
+    //until I switched to integer arithmetic like a BAWS
+    for (uint32 line_x = 0; line_x < grid_lines_x; line_x++) {
+	int32 pos_x = (grid_width * line_x) /grid_lines_x;
+	SDL_RenderDrawLine(sdl_renderer, dest_x + pos_x, grid_start_y, dest_x + pos_x, grid_end_y);
+    }
+
+    for (uint32 line_y = 0; line_y < grid_lines_y; line_y++) {
+	int32 pos_y = (grid_height*line_y)/grid_lines_y;
+
+	SDL_RenderDrawLine(sdl_renderer, grid_start_x, dest_y + pos_y, grid_end_x, dest_y + pos_y);
+    }
+
+    
+    
     SDL_RenderPresent(sdl_renderer);
     
 }
