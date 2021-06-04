@@ -20,6 +20,11 @@ typedef struct {
     int grid_y;
 } Mouse_Grid_Result;
 
+typedef struct {
+    Mouse_Grid_Result *buffer;//this is more like endpoints
+    int count;
+} Selection_Buffer;
+
 Mouse_Grid_Result get_mouse_grid(int mouse_x, int mouse_y, uint grid_width, uint grid_height);
 
 void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game_resources, int32 *mouse_x, int32 *mouse_y, bool *g_running, EDITOR_STATE *editor_state);
@@ -255,15 +260,44 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 
     static bool selecting = false;
 
-    static vec2 selecting_start = {0.0f, 0.0f};
-    static bool initialsed_normal_buffer = false;
-    static bool *normal_buffer = NULL;
+    static Mouse_Grid_Result selecting_start = {0, 0};
     
+    static int selection_buffers_count = 0;
+    static int selection_buffers_size = 2;
+    static Selection_Buffer *selection_buffers = NULL;
+    static bool initialized_selection_buffers = false;
 
+    if (!initialized_selection_buffers) {
+	initialized_selection_buffers = true;
+	selection_buffers = (Selection_Buffer*)malloc(selection_buffers_size * sizeof(Selection_Buffer));
+    }
+    
 
     //we could make a static pointer here
     //try it out for size 
     //static bool *normal_map_buffer = (bool*)malloc(sizeof());;
+
+        //texture_counter = texture_counter % NUM_TEX;
+
+    TextureResult texture_result = game_resources->textures[texture_counter];
+    //get grid-line info to render grid lines
+    int32 scale = 8;
+    //why minus
+    int32 dest_x = (SCREENWIDTH/2) - (scale*texture_result.im_width/2);
+    int32 dest_y = (SCREENHEIGHT/2) - (scale*texture_result.im_height/2);
+    
+    uint32 grid_width = texture_result.im_width * scale;
+    uint32 grid_height = texture_result.im_height * scale;
+
+    uint32 grid_start_x = dest_x;
+    uint32 grid_end_x = grid_start_x + grid_width;
+
+    uint32 grid_start_y = dest_y;
+    uint32 grid_end_y = dest_y + grid_height;
+
+    uint32 grid_lines_x = texture_result.im_width;
+    uint32 grid_lines_y = texture_result.im_height;
+
 
     while (SDL_PollEvent(&event)) {
 	if (event.type == SDL_QUIT) {
@@ -293,8 +327,47 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 		//make a vector from mouse pos
 		if (!selecting) {
 		    selecting = true;
-		    selecting_start = vec2_init(*mouse_x, *mouse_y);		    
+		    //actually want this to be a CELL not a vec
+		    selecting_start = get_mouse_grid(*mouse_x, *mouse_y, scale, scale, grid_start_x, grid_start_y, grid_end_x, grid_end_y);
+		    selection_buffers[selection_buffers_count].count = 0;
+		    selection_buffers[selection_buffers_count].buffer = (Mouse_Grid_Result*)malloc(sizeof(Mouse_Grid_Result) * texture_result.im_width * texture_result.im_height);
+		    selection_buffers[selection_buffers_count].buffer[selection_buffers[selection_buffers_count].count] = selecting_start;
+		    selection_buffers[selection_buffers_count].count++;
+
 		} else {
+		    //why is this not working every time?
+		    //it's due to the realloc....
+		    //ie it happens after 2, 4, 8, 16 times etc
+		    //selection_buffers[selection_buffers_count] = (Selection_Buffer*)malloc(texture_result.im_width * texture_result.im_height * sizeof(Selection_Buffer));
+		    //memcpy(selection_buffers[selection_buffers_count], selection_buffer, texture_result.im_width * texture_result.im_height * sizeof(Selection_Buffer));
+		    selection_buffers_count++;
+		    //resize if necessary
+		    if (selection_buffers_count > selection_buffers_size) {
+
+			//we are losing something here
+			//Selection_Buffer *temp_buffer = (Selection_Buffer*)malloc(sizeof(Selection_Buffer) * selection_buffers_size);
+
+			//memcpy((void*)temp_buffer, (void*)selection_buffers, selection_buffers_count * sizeof(Selection_Buffer));
+			
+			//free(selection_buffers);
+			
+			//selection_buffers = NULL;
+			Selection_Buffer most_recent = selection_buffers[selection_buffers_count-1];
+			
+			selection_buffers = (Selection_Buffer*)realloc(selection_buffers, selection_buffers_size * 2 * sizeof(Selection_Buffer));
+			selection_buffers[selection_buffers_count-1] = most_recent;
+			//selection_buffers[selection_buffers_count]
+
+			//memcpy((void*)selection_buffers, (void*)temp_buffer, selection_buffers_count * sizeof(Selection_Buffer));
+			
+			//free(temp_buffer);
+
+			selection_buffers_size *= 2;
+		    }
+		    //then clean up
+		    
+		    //free(selection_buffer);
+		    //selection_buffer = NULL;
 		    selecting = false;
 		}
 	    }
@@ -304,9 +377,7 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 	}
     }
 
-    if (selecting) {
-	
-    }
+
 
     //need some kind of a select region function
 
@@ -322,32 +393,24 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 	texture_counter = NUM_TEX - 1;
     }
 
-    //texture_counter = texture_counter % NUM_TEX;
-
-    TextureResult texture_result = game_resources->textures[texture_counter];
-    //get grid-line info to render grid lines
-    int32 scale = 8;
-    //why minus
-    int32 dest_x = (SCREENWIDTH/2) - (scale*texture_result.im_width/2);
-    int32 dest_y = (SCREENHEIGHT/2) - (scale*texture_result.im_height/2);
-    
-    uint32 grid_width = texture_result.im_width * scale;
-    uint32 grid_height = texture_result.im_height * scale;
-
-    uint32 grid_start_x = dest_x;
-    uint32 grid_end_x = grid_start_x + grid_width;
-
-    uint32 grid_start_y = dest_y;
-    uint32 grid_end_y = dest_y + grid_height;
-
-    uint32 grid_lines_x = texture_result.im_width;
-    uint32 grid_lines_y = texture_result.im_height;
 
     int mouse_grid_x, mouse_grid_y;
 
     Mouse_Grid_Result grid_result = get_mouse_grid(*mouse_x, *mouse_y, scale, scale, grid_start_x, grid_start_y, grid_end_x, grid_end_y);
     mouse_grid_x = grid_result.grid_x;
     mouse_grid_y = grid_result.grid_y;
+
+    if (selecting) {
+	if (grid_result.grid_x != selecting_start.grid_x || grid_result.grid_y != selecting_start.grid_y) {
+	    selecting_start = grid_result;
+	    selection_buffers[selection_buffers_count].buffer[selection_buffers[selection_buffers_count].count] = selecting_start;
+	    selection_buffers[selection_buffers_count].count++;
+	    if (selection_buffers[selection_buffers_count].count>= texture_result.im_width * texture_result.im_height) {
+		selection_buffers[selection_buffers_count].count= texture_result.im_width * texture_result.im_height; //prevent buffer overflow, though handle this better
+	    }
+	}
+    }
+    
     printf("grid x %d, grid y %d \n", mouse_grid_x, mouse_grid_y);
 
     #if 0
@@ -376,6 +439,36 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 
 	SDL_RenderDrawLine(sdl_renderer, grid_start_x, dest_y + pos_y, grid_end_x, dest_y + pos_y);
     }
+
+    if (mouse_grid_x != -1 && mouse_grid_y != -1) {
+	SDL_Rect normal_cell = rect_init(grid_start_x + mouse_grid_x*scale, grid_start_y + mouse_grid_y*scale, scale, scale);
+	SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0x00, 0x00, 0x10);
+	SDL_RenderDrawRect(sdl_renderer, &normal_cell);
+    }
+
+#if 1
+    if (selecting) {
+	SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0x00, 0x10);
+	Selection_Buffer selection_buffer = selection_buffers[selection_buffers_count];
+	for (int i = 0; i < selection_buffer.count; i++) {
+	    SDL_Rect normal_cell = rect_init(grid_start_x + selection_buffer.buffer[i].grid_x*scale, grid_start_y + selection_buffer.buffer[i].grid_y*scale, scale, scale);
+
+	    SDL_RenderDrawRect(sdl_renderer, &normal_cell);
+	    
+	}
+
+    }
+#endif
+
+    for (int i = 0; i < selection_buffers_count; i++) {
+	SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0x00, 0x10);
+	for (int j = 0; j < selection_buffers[i].count; j++) {
+	    SDL_Rect normal_cell = rect_init(grid_start_x + selection_buffers[i].buffer[j].grid_x*scale, grid_start_y + selection_buffers[i].buffer[j].grid_y*scale, scale, scale);
+	    SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0x00, 0x10);
+	    SDL_RenderDrawRect(sdl_renderer, &normal_cell);
+	}
+    }
+
 
     
     
