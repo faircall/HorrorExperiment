@@ -10,6 +10,11 @@
  * just rects
  *
  *
+ * how to do fill-polygon region? try scanline
+ *
+ * step one- toggle between buffers
+ * then have option to fill
+ *
  * TODO:
  * Start writing normal maps based on the image displayed
  * 
@@ -20,6 +25,8 @@ typedef struct {
     int grid_y;
 } Mouse_Grid_Result;
 
+
+//could add a flag here for 'closed' or not
 typedef struct {
     Mouse_Grid_Result *buffer;//this is more like endpoints
     int count;
@@ -253,8 +260,25 @@ Mouse_Grid_Result get_mouse_grid(int32 mouse_x, int32 mouse_y, int32 grid_spacin
     return result;
 }
 
+void scanline_fill(Selection_Buffer *selection_buffer)
+{
+    //step one get y-min y-max
+
+    //we need to check if the selection buffer is fillable, i.e a closed polygon shape
+
+    //does every cell have at least 2 neighbouring?
+}
+
 void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game_resources, int32 *mouse_x, int32 *mouse_y, bool *g_running, EDITOR_STATE *editor_state)
 {
+    //a VERY nice side effect
+    //of using static variables here is that
+    //the persist even when we switch states (e.g to collision).
+    //of course, the downside is we potentially leak memory
+    //so we should eventually switch all this over to pre-allocated memory
+
+    //todo: able to delete a selection
+    
     SDL_Event event;
     static int texture_counter = 0;
 
@@ -266,6 +290,15 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
     static int selection_buffers_size = 2;
     static Selection_Buffer *selection_buffers = NULL;
     static bool initialized_selection_buffers = false;
+    static int buffer_counter = 0;
+
+    static bool started_normal = false;
+
+    static vec2 normal_start = {0.0f, 0.0f};
+    static vec2 normal_end = {0.0f, 0.0f};
+	    
+
+    //static 
 
     if (!initialized_selection_buffers) {
 	initialized_selection_buffers = true;
@@ -314,6 +347,18 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 	    }
 	    if (event.key.keysym.scancode == SDL_SCANCODE_DOWN) {
 		texture_counter--;
+	    }
+	    if (event.key.keysym.scancode == SDL_SCANCODE_B) {
+		buffer_counter++;
+		if (buffer_counter >= selection_buffers_count) {
+		    buffer_counter = 0;
+		}
+	    }
+
+	    if (event.key.keysym.scancode == SDL_SCANCODE_D) {
+		//handle deletions
+		//could be a bit tricky, need to shift things around!
+		
 	    }
 	}
 
@@ -372,6 +417,19 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 		}
 	    }
 	    else if (event.button.button == SDL_BUTTON_RIGHT) {
+		//make a normal vector
+		if (!started_normal) {
+		    normal_start.x = *mouse_x;
+		    normal_start.y = *mouse_y;
+		    started_normal = true;
+		    
+		} else {
+		    started_normal = false;
+		    normal_end.x = *mouse_x;
+		    normal_end.y = *mouse_y;
+		    
+		}
+		
 		
 	    }
 	}
@@ -448,7 +506,7 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 
 #if 1
     if (selecting) {
-	SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0x00, 0x10);
+	SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0x00, 0xff, 0x10);
 	Selection_Buffer selection_buffer = selection_buffers[selection_buffers_count];
 	for (int i = 0; i < selection_buffer.count; i++) {
 	    SDL_Rect normal_cell = rect_init(grid_start_x + selection_buffer.buffer[i].grid_x*scale, grid_start_y + selection_buffer.buffer[i].grid_y*scale, scale, scale);
@@ -459,14 +517,30 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 
     }
 #endif
-
+    printf("buffer counter is %d", buffer_counter);
     for (int i = 0; i < selection_buffers_count; i++) {
-	SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0x00, 0x10);
-	for (int j = 0; j < selection_buffers[i].count; j++) {
-	    SDL_Rect normal_cell = rect_init(grid_start_x + selection_buffers[i].buffer[j].grid_x*scale, grid_start_y + selection_buffers[i].buffer[j].grid_y*scale, scale, scale);
+	if (i == buffer_counter) {
+	    SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0xff, 0xff, 0x10);
+	} else {
 	    SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0x00, 0x10);
+	}
+	for (int j = 0; j < selection_buffers[i].count; j++) {
+
+	    SDL_Rect normal_cell = rect_init(grid_start_x + selection_buffers[i].buffer[j].grid_x*scale, grid_start_y + selection_buffers[i].buffer[j].grid_y*scale, scale, scale);
+	    //SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0x00, 0x10);
 	    SDL_RenderDrawRect(sdl_renderer, &normal_cell);
 	}
+    }
+
+    if (started_normal) {
+	normal_end.x = *mouse_x;
+	normal_end.y = *mouse_y;
+	vec2 normal_to_draw = vec2_sub(normal_end, normal_start);
+	normal_to_draw = vec2_normalize(normal_to_draw);
+	normal_to_draw = vec2_scale(100.0f, normal_to_draw);
+	SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0xff, 0xff);
+	SDL_RenderDrawLine(sdl_renderer, normal_start.x, normal_start.y, normal_start.x + normal_to_draw.x, normal_start.y + normal_to_draw.y);
+	
     }
 
 
