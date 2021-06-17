@@ -29,6 +29,8 @@ real32 vec2_inner(vec2 a, vec2 b);
 real32 vec2_angle(vec2 a, vec2 b);
 real32 vec2_distance(vec2 a, vec2 b);
 vec3 vec3_init(real32 x, real32 y, real32 z);
+real32 vec3_mag(vec3 a);
+vec3 vec3_normalize(vec3 a);
 
 #define _GMO_MATH_H_
 #endif

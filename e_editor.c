@@ -30,6 +30,7 @@ typedef struct {
 typedef struct {
     Mouse_Grid_Result *buffer;//this is more like endpoints
     int count;
+    vec3 vec3_value;
 } Selection_Buffer;
 
 Mouse_Grid_Result get_mouse_grid(int mouse_x, int mouse_y, uint grid_width, uint grid_height);
@@ -269,6 +270,29 @@ void scanline_fill(Selection_Buffer *selection_buffer)
     //does every cell have at least 2 neighbouring?
 }
 
+vec3 vec2_to_vec3_normal(vec2 vec2_normal)
+{
+    vec3 result = {0.0f, 0.0f, 1.0f};
+    //start off as a vertical line straight up
+
+    float mag = vec2_mag(vec2_normal);
+    
+    float x_comp = vec2_normal.x;
+    float y_comp = vec2_normal.y;
+    float z_comp = 100.0f - mag;
+
+    result.x = x_comp;
+    result.y = y_comp;
+    result.z = z_comp;
+
+    result = vec3_normalize(result);
+    
+    printf("calculated vec3 %f %f %f \n", result.x, result.y, result.z);
+    
+    
+    return result;
+}
+
 void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game_resources, int32 *mouse_x, int32 *mouse_y, bool *g_running, EDITOR_STATE *editor_state)
 {
     //a VERY nice side effect
@@ -296,6 +320,8 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 
     static vec2 normal_start = {0.0f, 0.0f};
     static vec2 normal_end = {0.0f, 0.0f};
+
+    static vec2 normal_to_draw = {0.0f, 0.0f};
 	    
 
     //static 
@@ -350,9 +376,11 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 	    }
 	    if (event.key.keysym.scancode == SDL_SCANCODE_B) {
 		buffer_counter++;
-		if (buffer_counter >= selection_buffers_count) {
+		if (buffer_counter > selection_buffers_count) {
 		    buffer_counter = 0;
 		}
+		vec3 vec3_current_selection = selection_buffers[buffer_counter].vec3_value;
+		printf("current selection (%d) has x: %f y: %f z: %f \n", buffer_counter, vec3_current_selection.x, vec3_current_selection.y, vec3_current_selection.z);
 	    }
 
 	    if (event.key.keysym.scancode == SDL_SCANCODE_D) {
@@ -375,6 +403,7 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 		    //actually want this to be a CELL not a vec
 		    selecting_start = get_mouse_grid(*mouse_x, *mouse_y, scale, scale, grid_start_x, grid_start_y, grid_end_x, grid_end_y);
 		    selection_buffers[selection_buffers_count].count = 0;
+		    selection_buffers[selection_buffers_count].vec3_value = vec3_init(0.0f, 0.0f, 0.0f);
 		    selection_buffers[selection_buffers_count].buffer = (Mouse_Grid_Result*)malloc(sizeof(Mouse_Grid_Result) * texture_result.im_width * texture_result.im_height);
 		    selection_buffers[selection_buffers_count].buffer[selection_buffers[selection_buffers_count].count] = selecting_start;
 		    selection_buffers[selection_buffers_count].count++;
@@ -425,9 +454,11 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 		    
 		} else {
 		    started_normal = false;
-		    normal_end.x = *mouse_x;
-		    normal_end.y = *mouse_y;
-		    
+
+		    //convert the vec2 to a vec3
+		    vec3 normal_to_add = vec2_to_vec3_normal(normal_to_draw);
+		    //selection_buffers[selection_buffers_count].vec3_value = normal_to_add;
+		    selection_buffers[buffer_counter].vec3_value = normal_to_add;
 		}
 		
 		
@@ -435,7 +466,7 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 	}
     }
 
-
+    
 
     //need some kind of a select region function
 
@@ -469,7 +500,7 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 	}
     }
     
-    printf("grid x %d, grid y %d \n", mouse_grid_x, mouse_grid_y);
+    //printf("grid x %d, grid y %d \n", mouse_grid_x, mouse_grid_y);
 
     #if 0
     if (!initialised_normal_buffer) {
@@ -517,7 +548,7 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 
     }
 #endif
-    printf("buffer counter is %d", buffer_counter);
+    //printf("buffer counter is %d", buffer_counter);
     for (int i = 0; i < selection_buffers_count; i++) {
 	if (i == buffer_counter) {
 	    SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0xff, 0xff, 0x10);
@@ -535,9 +566,16 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
     if (started_normal) {
 	normal_end.x = *mouse_x;
 	normal_end.y = *mouse_y;
-	vec2 normal_to_draw = vec2_sub(normal_end, normal_start);
-	normal_to_draw = vec2_normalize(normal_to_draw);
-	normal_to_draw = vec2_scale(100.0f, normal_to_draw);
+	normal_to_draw = vec2_sub(normal_end, normal_start);
+	if (vec2_mag(normal_to_draw) >= 100.0f) {	    
+	    normal_to_draw = vec2_normalize(normal_to_draw);
+	    normal_to_draw = vec2_scale(100.0f, normal_to_draw);
+	}
+	//the 3d normal will be z of 1 - magnitude of the vector,
+	//x will be magntiude * x comp
+	//y will be magnitude * y comp
+	// but then 'normalized'
+	//printf("normal to draw x, y: %f %f\n", normal_to_draw.x, normal_to_draw.y);
 	SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0xff, 0xff);
 	SDL_RenderDrawLine(sdl_renderer, normal_start.x, normal_start.y, normal_start.x + normal_to_draw.x, normal_start.y + normal_to_draw.y);
 	

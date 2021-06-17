@@ -92,3 +92,21 @@ vec3 vec3_init(real32 x, real32 y, real32 z)
     result.z = z;
     return result;
 }
+
+real32 vec3_mag(vec3 a)
+{
+    return sqrt(a.x*a.x + a.y*a.y + a.z*a.z);
+}
+
+vec3 vec3_normalize(vec3 a)
+{
+    vec3 result = a;
+    real32 mag = vec3_mag(a);
+    if (mag != 0.0f) {
+	//use epsilon later
+	result.x /= mag;
+	result.y /= mag;
+	result.z /= mag;
+    }
+    return result;
+}
