@@ -15,14 +15,20 @@
  * step one- toggle between buffers
  * then have option to fill
  *
+ * make a new struct to hold selection BUFFERS to track the count also
+ * 
  * TODO:
  * Start writing normal maps based on the image displayed
+ *
+ * Almost ready for this
+ *
+ * Think about how to test it too
  * 
  * */
 
 typedef struct {
-    int grid_x;
-    int grid_y;
+    int x;
+    int y;
 } Mouse_Grid_Result;
 
 
@@ -32,6 +38,8 @@ typedef struct {
     int count;
     vec3 vec3_value;
 } Selection_Buffer;
+
+int32 vec3_to_int32(vec3 a);
 
 Mouse_Grid_Result get_mouse_grid(int mouse_x, int mouse_y, uint grid_width, uint grid_height);
 
@@ -248,13 +256,13 @@ Mouse_Grid_Result get_mouse_grid(int32 mouse_x, int32 mouse_y, int32 grid_spacin
     /// a bit more think required
     Mouse_Grid_Result result;
     if (mouse_x < grid_start_x || mouse_y < grid_start_y || mouse_x > grid_end_x || mouse_y > grid_end_y) {
-	result.grid_x = -1;
-	result.grid_y = -1;
+	result.x = -1;
+	result.y = -1;
     } else {
     
 	//we actually want to grid spacing...also
-	result.grid_x = (mouse_x - grid_start_x) / grid_spacing_x;
-	result.grid_y = (mouse_y - grid_start_y) / grid_spacing_y;
+	result.x = (mouse_x - grid_start_x) / grid_spacing_x;
+	result.y = (mouse_y - grid_start_y) / grid_spacing_y;
     }
 
     
@@ -291,6 +299,75 @@ vec3 vec2_to_vec3_normal(vec2 vec2_normal)
     
     
     return result;
+}
+
+int32 vec3_to_int32(vec3 a)
+{
+    real32 red_real = 127.5 + a.x*127.5;
+    real32 green_real = 127.5 + a.y*127.5;
+    real32 blue_real = 127.5 + a.z*127.5;
+
+    int32 result = 0x000000ff;
+    
+    int32 r = red_real;
+    int32 g = green_real;
+    int32 b = blue_real;
+
+    printf("just to check, before we have red: %d, green: %d, blue: %d values \n", r, g, b);
+
+    r = r << 6*4;//note that it shifts bits, not bytes! One hex "bit" (hit?) is 4 bits
+    g = g << 4*4;
+    b = b << 2*4;
+
+    printf("and after we have red: %d, green: %d, blue: %d values \n", r, g, b);
+
+    result = result + r + g + b;
+
+    return result;
+
+}
+
+void save_normals(Selection_Buffer *selection_buffers, int selection_buffers_count, int width, int height)
+{
+    char file_name_buffer[50];
+    get_string_stripped(file_name_buffer, 50);
+
+    //we actually want to write a .png file here which is the normal map I believe, to play well with the pixel shader
+    //to do that, we first need to set aside a buffer
+    //for the dimensions of the .png
+    //it will be rgba (or rgb?)
+    //then we populate with int32s
+    //which are packed bytes with the 0-255 value of r,g,b
+    //and THAT comes from the normal component x, y, z from mapped from -1.0 to 1.0
+    //to 0-255
+
+    //to do that mapping....we could...
+    //want -1->0, 1->255
+    //0.5 would be.... 128?
+    //first add 1 so we have 0-2
+    //then do.... 127.5 + 127.5*component I think will work
+    //then round to nearest int
+
+    int32 *image_buffer = (int32*)malloc(width * height * sizeof(int32));
+
+    for (int i = 0; i < width; i++) {
+	for (int j = 0; j < height; j++) {
+	    image_buffer[j*width + i] = 0x00000000;
+	}
+    }
+
+    for (int i = 0; i < selection_buffers_count; i++) {
+	Selection_Buffer current_selection_buffer = selection_buffers[i];
+	int32 packed_normal_value = vec3_to_int32(current_selection_buffer.vec3_value);
+	for (int j = 0; j < current_selection_buffer.count; j++) {
+	    Mouse_Grid_Result current_grid = current_selection_buffer.buffer[j];	    
+	    image_buffer[current_grid.y*width + current_grid.x] = packed_normal_value;
+	}
+    }
+
+    //now to write this image buffer
+    //use stb_image_write
+
 }
 
 void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game_resources, int32 *mouse_x, int32 *mouse_y, bool *g_running, EDITOR_STATE *editor_state)
@@ -357,6 +434,7 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
     uint32 grid_lines_x = texture_result.im_width;
     uint32 grid_lines_y = texture_result.im_height;
 
+    bool want_save = false;
 
     while (SDL_PollEvent(&event)) {
 	if (event.type == SDL_QUIT) {
@@ -376,7 +454,7 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 	    }
 	    if (event.key.keysym.scancode == SDL_SCANCODE_B) {
 		buffer_counter++;
-		if (buffer_counter > selection_buffers_count) {
+		if (buffer_counter >= selection_buffers_count) {
 		    buffer_counter = 0;
 		}
 		vec3 vec3_current_selection = selection_buffers[buffer_counter].vec3_value;
@@ -387,6 +465,14 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 		//handle deletions
 		//could be a bit tricky, need to shift things around!
 		
+	    }
+
+	    if (event.key.keysym.scancode == SDL_SCANCODE_S) {
+		want_save = true;
+		for (int i = 0; i < selection_buffers_count; i++) {
+		    vec3 current_vec3 = selection_buffers[i].vec3_value;
+		    int32 packed_pixel = vec3_to_int32(current_vec3);
+		}
 	    }
 	}
 
@@ -486,11 +572,11 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
     int mouse_grid_x, mouse_grid_y;
 
     Mouse_Grid_Result grid_result = get_mouse_grid(*mouse_x, *mouse_y, scale, scale, grid_start_x, grid_start_y, grid_end_x, grid_end_y);
-    mouse_grid_x = grid_result.grid_x;
-    mouse_grid_y = grid_result.grid_y;
+    mouse_grid_x = grid_result.x;
+    mouse_grid_y = grid_result.y;
 
     if (selecting) {
-	if (grid_result.grid_x != selecting_start.grid_x || grid_result.grid_y != selecting_start.grid_y) {
+	if (grid_result.x != selecting_start.x || grid_result.y != selecting_start.y) {
 	    selecting_start = grid_result;
 	    selection_buffers[selection_buffers_count].buffer[selection_buffers[selection_buffers_count].count] = selecting_start;
 	    selection_buffers[selection_buffers_count].count++;
@@ -540,7 +626,7 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 	SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0x00, 0xff, 0x10);
 	Selection_Buffer selection_buffer = selection_buffers[selection_buffers_count];
 	for (int i = 0; i < selection_buffer.count; i++) {
-	    SDL_Rect normal_cell = rect_init(grid_start_x + selection_buffer.buffer[i].grid_x*scale, grid_start_y + selection_buffer.buffer[i].grid_y*scale, scale, scale);
+	    SDL_Rect normal_cell = rect_init(grid_start_x + selection_buffer.buffer[i].x*scale, grid_start_y + selection_buffer.buffer[i].y*scale, scale, scale);
 
 	    SDL_RenderDrawRect(sdl_renderer, &normal_cell);
 	    
@@ -553,11 +639,12 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 	if (i == buffer_counter) {
 	    SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0xff, 0xff, 0x10);
 	} else {
+	    //draw the color as a normal
 	    SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0x00, 0x10);
 	}
 	for (int j = 0; j < selection_buffers[i].count; j++) {
 
-	    SDL_Rect normal_cell = rect_init(grid_start_x + selection_buffers[i].buffer[j].grid_x*scale, grid_start_y + selection_buffers[i].buffer[j].grid_y*scale, scale, scale);
+	    SDL_Rect normal_cell = rect_init(grid_start_x + selection_buffers[i].buffer[j].x*scale, grid_start_y + selection_buffers[i].buffer[j].y*scale, scale, scale);
 	    //SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0x00, 0x10);
 	    SDL_RenderDrawRect(sdl_renderer, &normal_cell);
 	}
