@@ -1,5 +1,5 @@
 #define _CRT_SECURE_NO_WARNINGS
-#define STB_IMAGE_WRITE_IMPLMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
 #include "e_editor.h"
@@ -18,11 +18,8 @@
  * make a new struct to hold selection BUFFERS to track the count also
  * 
  * TODO:
- * Start writing normal maps based on the image displayed
- *
- * Almost ready for this
- *
- * Think about how to test it too
+ * write the shader for normal maps!
+ * also clean up the ui for how you have to select each selection etc
  * 
  * */
 
@@ -46,6 +43,8 @@ Mouse_Grid_Result get_mouse_grid(int mouse_x, int mouse_y, uint grid_width, uint
 void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game_resources, int32 *mouse_x, int32 *mouse_y, bool *g_running, EDITOR_STATE *editor_state);
 
 void collision_update_and_render(SDL_Renderer *sdl_renderer, SDL_Rect **editor_rect_list, uint32 *num_rects, uint32 *rect_storage, int32 *mouse_x, int32 *mouse_y, bool *g_running, char *argv, EDITOR_STATE *editor_state, bool *want_save, bool *want_load);
+
+void save_normals(Selection_Buffer *selection_buffers, int selection_buffers_count, int width, int height);
 
 void editor_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game_resources, SDL_Rect **editor_rect_list, uint32 *num_rects, uint32 *rect_storage, int32 *mouse_x, int32 *mouse_y, bool *g_running, char *argv)    
 {
@@ -303,6 +302,8 @@ vec3 vec2_to_vec3_normal(vec2 vec2_normal)
 
 int32 vec3_to_int32(vec3 a)
 {
+
+    //don't think this is working right
     real32 red_real = 127.5 + a.x*127.5;
     real32 green_real = 127.5 + a.y*127.5;
     real32 blue_real = 127.5 + a.z*127.5;
@@ -311,10 +312,14 @@ int32 vec3_to_int32(vec3 a)
     
     int32 r = red_real;
     int32 g = green_real;
-    int32 b = blue_real;
+    int32 b = blue_real;//this is not working right
+
+    printf("the real values were %f %f %f\n",  red_real, green_real, blue_real);
 
     printf("just to check, before we have red: %d, green: %d, blue: %d values \n", r, g, b);
 
+
+    //this might still be wrong?
     r = r << 6*4;//note that it shifts bits, not bytes! One hex "bit" (hit?) is 4 bits
     g = g << 4*4;
     b = b << 2*4;
@@ -364,7 +369,16 @@ void save_normals(Selection_Buffer *selection_buffers, int selection_buffers_cou
 	    image_buffer[current_grid.y*width + current_grid.x] = packed_normal_value;
 	}
     }
+    int image_write_result = stbi_write_png(file_name_buffer, width, height, 4, (void*)image_buffer, width*4);
 
+    if (!image_write_result) {
+	printf("failed to write the png file\n");
+    } else {
+	printf("apparnetly we wrote the file? where is it?\n");
+    }
+	   
+
+    free(image_buffer);
     //now to write this image buffer
     //use stb_image_write
 
@@ -470,8 +484,9 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 	    if (event.key.keysym.scancode == SDL_SCANCODE_S) {
 		want_save = true;
 		for (int i = 0; i < selection_buffers_count; i++) {
-		    vec3 current_vec3 = selection_buffers[i].vec3_value;
-		    int32 packed_pixel = vec3_to_int32(current_vec3);
+		    //vec3 current_vec3 = selection_buffers[i].vec3_value;
+		    save_normals(selection_buffers, selection_buffers_count, texture_result.im_width, texture_result.im_height);
+		    //int32 packed_pixel = vec3_to_int32(current_vec3);
 		}
 	    }
 	}
@@ -543,8 +558,11 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 
 		    //convert the vec2 to a vec3
 		    vec3 normal_to_add = vec2_to_vec3_normal(normal_to_draw);
-		    //selection_buffers[selection_buffers_count].vec3_value = normal_to_add;
+		    //printf("normal to add was %f %f %f\n", normal_to_add.x, normal_to_add.y, normal_to_add.z);
+		    
+		    //somehow we are only writing this the first time through
 		    selection_buffers[buffer_counter].vec3_value = normal_to_add;
+		    //selection_buffers[selection_buffers_count].vec3_value = normal_to_add;
 		}
 		
 		
