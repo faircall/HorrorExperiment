@@ -10,6 +10,7 @@
 #include "gmo_types.h"
 
 typedef enum {
+    YUJI_TEX,
     OCEAN_TEX,
     LAKE_TEX,
     LAKE_FISHING_TEX,
@@ -29,8 +30,13 @@ typedef struct {
     TextureType type;
 } TextureResult;
 
-TextureResult load_texture(char *file_name, TextureType type, SDL_Renderer *renderer);
-TextureResult *load_textures(SDL_Renderer *renderer);
+typedef struct {
+    SDL_Renderer *sdl_renderer;
+    SDL_GLContext *gl_context;
+} GlobalRenderer;//can set to NULL if needed, which is nice
+
+TextureResult load_texture(char *file_name, TextureType type, GlobalRenderer global_renderer);
+TextureResult *load_textures(GlobalRenderer global_renderer);
 
 #define _SDL_UTIL_H_
 #endif

@@ -5,6 +5,7 @@
 
 
 char *g_texture_names[NUM_TEX] = {
+    "art/yuji_rough.png",
     "art/ocean_bg.png",
     "art/the_lake.png",
     "art/fishing_temp.png",
@@ -15,7 +16,7 @@ char *g_texture_names[NUM_TEX] = {
 
 
 
-TextureResult load_texture(char *file_name, TextureType type, SDL_Renderer *renderer)
+TextureResult load_texture(char *file_name, TextureType type, GlobalRenderer global_renderer)
 {
     //load a 32-bit, rgba texture
     TextureResult texture_result;
@@ -31,7 +32,7 @@ TextureResult load_texture(char *file_name, TextureType type, SDL_Renderer *rend
 	//error handling
 	return texture_result;
     }
-    texture_result.texture = SDL_CreateTextureFromSurface(renderer, img_surface);
+    texture_result.texture = SDL_CreateTextureFromSurface(global_renderer.sdl_renderer, img_surface);
     SDL_FreeSurface(img_surface);
     if (texture_result.texture == NULL) {
 	//error handling
@@ -41,11 +42,11 @@ TextureResult load_texture(char *file_name, TextureType type, SDL_Renderer *rend
     return texture_result;
 }
 
-TextureResult *load_textures(SDL_Renderer *renderer)
+TextureResult *load_textures(GlobalRenderer global_renderer)
 {
     TextureResult *textures = (TextureResult*)malloc(NUM_TEX * sizeof(TextureResult));
     for (int i = 0; i < NUM_TEX; i++) {
-	textures[i] = load_texture(g_texture_names[i], i, renderer);
+	textures[i] = load_texture(g_texture_names[i], i, global_renderer);
     }
     return textures;    
 }

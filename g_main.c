@@ -4,7 +4,11 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <tchar.h>
+
+#include <GL/glew.h>
+
 #include "SDL.h"
+#include "SDL_opengl.h"
 #include "gmo_types.h"
 #include "gmo_math.h"
 #include "gmo_sound.h"
@@ -15,11 +19,29 @@
 #include "g_gameutils.h"
 #include "e_editor.h"
 
+//add glew etc
+
 //#include "gmo_render.h"
 #include <windows.h>
 
+//#define RENDERER_OPENGL
+//#define RENDERER_SOFTWARE
 
-
+/*
+ *Bigger todo:
+ *shift over to OpenGL rendering
+ *
+ *also write the proper software renderer with per-pixel control
+ *aka a framebuffer
+ *
+ *Can I do it so I have the renderer AND
+ *OpenGL? And switch between?
+ *
+ *Also I can see now why we want a texture atlas:
+ *because we can only load so many individual textures in, but have lots of space
+ *so we can load in a giant texture and render parts of it selectively
+ *
+ */
 
 
 /*
@@ -37,23 +59,43 @@ void editor_update_and_render(SDL_Renderer *sdl_renderer, SDL_Rect **editor_rect
 
 void game_update_and_render(SDL_Renderer *sdl_renderer, Entity *player, bool *g_running, int32 *mouse_x, int32 *mouse_y);
 
-void update_game_state(GameState *game_state, SDL_Renderer *sdl_renderer, GameResource game_resources, bool *g_running);
+void game_update_and_render_opengl(SDL_Renderer *sdl_renderer, Entity *player, bool *g_running, int32 *mouse_x, int32 *mouse_y);
+
+void update_game_state(GameState *game_state, GlobalRenderer global_renderer, GameResource game_resources, bool *g_running);
 
 
 
 int main(int argc, char **argv)
 {
+
     /* SDL Init */
+
+    SDL_Window *sdl_window;
+
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) != 0) {
            SDL_Log("Didn't init: %s\n", SDL_GetError());
     }
+
+    sdl_window = SDL_CreateWindow("Wolf Island", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREENWIDTH, SCREENHEIGHT, SDL_WINDOW_OPENGL);
+
+    SDL_Renderer *sdl_renderer = SDL_CreateRenderer(sdl_window, -1, SDL_RENDERER_ACCELERATED);
     
-    SDL_Window *sdl_window;
-    SDL_Renderer *sdl_renderer;
+
+
     
-    if (SDL_CreateWindowAndRenderer(SCREENWIDTH, SCREENHEIGHT, SDL_WINDOW_RESIZABLE, &sdl_window, &sdl_renderer) != 0) {
-        SDL_Log("Didn't create window: %s\n", SDL_GetError());
+
+
+    SDL_GLContext gl_context = SDL_GL_CreateContext(sdl_window);
+    GLenum glew_err = glewInit();
+    if (glew_err != GLEW_OK) {
+	printf("there was an error initing glew\n");
+	return -1;
     }
+
+    GlobalRenderer global_renderer;
+    global_renderer.sdl_renderer = sdl_renderer;
+    global_renderer.gl_context = gl_context;
+
     
     /* OpenAL init */
     ALCdevice *al_device;
@@ -76,7 +118,8 @@ int main(int argc, char **argv)
     
     /* load some images */
     GameResource game_resources;
-    game_resources.textures = load_textures(sdl_renderer);
+    //TODO: make OPENGL version
+    game_resources.textures = load_textures(global_renderer);
     game_resources.sound_sources = load_static_sources(al_context);
     game_resources.sound_buffers = load_sound_buffers(al_context);
     /* load sounds*/
@@ -101,7 +144,8 @@ int main(int argc, char **argv)
 
     //pull this out to a game_state init function
     GameState game_state;
-    GAME_STATE starting_state = GAME_EDITOR;
+    //GAME_STATE starting_state = GAME_EDITOR;
+    GAME_STATE starting_state = GAME_TITLE;
     game_state.current_state = starting_state;
     game_state.current_score = 0;
     game_state.high_score = 0;
@@ -122,6 +166,9 @@ int main(int argc, char **argv)
     Entity player = entity_init(1, vec2_init(40.0f, 40.0f), vec2_init(0.0f, 0.0f),
 				vec2_init(0.0f, 0.0f), vec2_init(0.0f, 0.0f), vec2_init(0.0f, 0.0f),
 				3000.0f, 700.0f, false, 100.0f, rect_init(40.0f, 40.0f, 32.0f, 32.0f), BRAIN_RESTING);
+
+    //Vec2 *editor_pixel_grid = (Vec2*)malloc(sizeof(Vec2) * );
+    //bool *editor_pixel_
     
     while (g_running) {
 	current_time = SDL_GetTicks();
@@ -130,38 +177,28 @@ int main(int argc, char **argv)
 	last_time = current_time;
 	game_state.dt = dt;
 	game_state.total_time_ms = total_time_ms;
+	//TODO: make OPENGL version
 	if (game_state.current_state != GAME_EDITOR) {
-	update_game_state(&game_state, sdl_renderer, game_resources, &g_running);
-	} else {
-	    editor_update_and_render(sdl_renderer, &game_resources, &editor_rect_list, &num_rects, &rect_storage, &mouse_x, &mouse_y, &g_running, argv[1]);
-	}
-	
-	#if 0
-	SDL_Event sdl_event;
-	//would like an array of function pointers to switch states rather than endless if statements
+	    //TODO: make OPENGL version
 
-	//update_game_state(&game_state, game_resources, &g_running);
-	
-	if (game_state.current_state == GAME_TITLE) {
-	    do_title(&game_state, al_source, sdl_renderer, textures, &g_running);	    
-	} else if (game_state.current_state == GAME_OVER) {
-	    while (SDL_PollEvent(&sdl_event)) {
-		if (sdl_event.type == SDL_QUIT) {
-		    g_running = false;
-		    break;
-		}
-	    }
-	    //render gameover
-	} else if (game_state.current_state == GAME_LAKE) {
-	    do_lake(&game_state, lake_source, sdl_renderer, textures, &g_running);
-	} else if (game_state.current_state == GAME_FISHING) {
-	    do_fishing(&game_state, lake_source, sdl_renderer, textures,  &g_running);
-	} else if (game_state.current_state == GAME_PLAYING) {	    
-	    game_update_and_render(sdl_renderer, &player, &g_running, &mouse_x, &mouse_y);	    
-	} else if (game_state.current_state == GAME_EDITOR) {
-	    editor_update_and_render(sdl_renderer, &editor_rect_list, &num_rects, &rect_storage, &mouse_x, &mouse_y, &g_running, argv[1]);
+	    update_game_state(&game_state, global_renderer, game_resources, &g_running);
+
+
+
+
+
+	} else {
+	    //TODO: make OPENGL version
+
+	    editor_update_and_render(sdl_renderer, &game_resources, &editor_rect_list, &num_rects, &rect_storage, &mouse_x, &mouse_y, &g_running, argv[1]);
+
+
+
+
+
 	}
-	#endif
+	
+
 	
     }
 
@@ -170,6 +207,9 @@ int main(int argc, char **argv)
 }
 
 
+void game_update_and_render_opengl(SDL_Renderer *sdl_renderer, Entity *player, bool *g_running, int32 *mouse_x, int32 *mouse_y)
+{
+}
 
 void game_update_and_render(SDL_Renderer *sdl_renderer, Entity *player, bool *g_running, int32 *mouse_x, int32 *mouse_y)
 {
@@ -272,12 +312,12 @@ void game_update_and_render(SDL_Renderer *sdl_renderer, Entity *player, bool *g_
 }
 
 
-void update_game_state(GameState *game_state, SDL_Renderer *sdl_renderer, GameResource game_resources, bool *g_running)
+void update_game_state(GameState *game_state, GlobalRenderer global_renderer, GameResource game_resources, bool *g_running)
 {
     switch (game_state->current_state) {
     case GAME_TITLE:
     {
-	do_title(game_state, sdl_renderer, game_resources, g_running);
+	do_title(game_state, global_renderer.sdl_renderer, game_resources, g_running);
 	break;
     }
     case GAME_OVER:
@@ -286,12 +326,12 @@ void update_game_state(GameState *game_state, SDL_Renderer *sdl_renderer, GameRe
     }
     case GAME_LAKE:
     {
-	do_lake(game_state, sdl_renderer, game_resources, g_running);
+	do_lake(game_state, global_renderer.sdl_renderer, game_resources, g_running);
 	break;
     }
     case GAME_FISHING:
     {
-	do_fishing(game_state, sdl_renderer, game_resources, g_running);
+	do_fishing(game_state, global_renderer.sdl_renderer, game_resources, g_running);
 	break;
     }
 
