@@ -1,6 +1,6 @@
 #include "g_levels.h"
 
-void do_title(GameState *game_state, SDL_Renderer *sdl_renderer, GameResource game_resources, bool *g_running)
+void do_title(GameState *game_state, GlobalRenderer global_renderer, GameResource game_resources, bool *g_running)
 {
     	SDL_Event sdl_event;
 
@@ -10,10 +10,15 @@ void do_title(GameState *game_state, SDL_Renderer *sdl_renderer, GameResource ga
 		break;
 	    }
 	}
+	#if 0
 	SDL_SetRenderDrawColor(sdl_renderer, 0xbf, 0x00, 0xaf, 0xff);
 	SDL_RenderClear(sdl_renderer);
 	SDL_RenderCopy(sdl_renderer, game_resources.textures[OCEAN_TEX].texture, NULL, NULL);
 	SDL_RenderPresent(sdl_renderer);
+	#endif
+	set_background_color(global_renderer, 0xbf, 0x00, 0xaf, 0xff);
+	draw_texture_fullscreen(global_renderer, game_resources, OCEAN_TEX);
+	update_screen(global_renderer);
 	//need a test here
 	//wrap the below
 	ALint al_source_state;
@@ -51,7 +56,7 @@ void do_title(GameState *game_state, SDL_Renderer *sdl_renderer, GameResource ga
 
 }
 
-void do_lake(GameState *game_state, SDL_Renderer *sdl_renderer, GameResource game_resources, bool *g_running)
+void do_lake(GameState *game_state, GlobalRenderer global_renderer, GameResource game_resources, bool *g_running)
 {
     	SDL_Event sdl_event;
 
@@ -69,12 +74,17 @@ void do_lake(GameState *game_state, SDL_Renderer *sdl_renderer, GameResource gam
 	}
 
 	//todo: animate the water
+	#if 0
 	SDL_SetRenderDrawColor(sdl_renderer, 0xbf, 0x00, 0xaf, 0xff);
 	//make this modular series of calls with more individual sprites
 	//will look way better
 	SDL_RenderClear(sdl_renderer);
 	SDL_RenderCopy(sdl_renderer, game_resources.textures[LAKE_TEX].texture, NULL, NULL);
 	SDL_RenderPresent(sdl_renderer);
+	#endif 
+	set_background_color(global_renderer, 0xbf, 0x00, 0xaf, 0xff);
+	draw_texture_fullscreen(global_renderer, game_resources, LAKE_TEX);
+	update_screen(global_renderer);
 	//need a test here
 	//wrap the below
 	ALint al_source_state;
@@ -122,7 +132,7 @@ void set_rod_rect(int32 mouse_x, int32 mouse_y, SDL_Rect *rect, SDL_RendererFlip
     }
 }
 
-void do_fishing(GameState *game_state, SDL_Renderer *sdl_renderer, GameResource game_resources, bool *g_running)
+void do_fishing(GameState *game_state, GlobalRenderer global_renderer, GameResource game_resources, bool *g_running)
 {
 
     //there is a bug here about
@@ -185,10 +195,14 @@ void do_fishing(GameState *game_state, SDL_Renderer *sdl_renderer, GameResource 
 	    }
 	}
 
+	#if 0
 	SDL_SetRenderDrawColor(sdl_renderer, 0xbf, 0x00, 0xaf, 0xff);
 	SDL_RenderClear(sdl_renderer);
 	SDL_RenderCopy(sdl_renderer, game_resources.textures[LAKE_FISHING_TEX].texture, NULL, NULL);
+	#endif
 
+	draw_texture_fullscreen(global_renderer, game_resources, LAKE_FISHING_TEX);
+	
 	for (int32 i = 0; i < 4; i++) {
 	    if (game_state->water_ripples[i].animation_playing) {
 		SDL_Rect t_ripple_rect_src = rect_init(game_state->water_ripples[i].animation_frame * 32, 0, 32, 32);
