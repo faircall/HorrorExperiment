@@ -16,8 +16,12 @@ char *g_texture_names[NUM_TEX] = {
 
 
 
+
+
 TextureResult load_texture(char *file_name, TextureType type, GlobalRenderer global_renderer)
 {
+    //add opengl support into this
+    //
     //load a 32-bit, rgba texture
     TextureResult texture_result;
     texture_result.type = type;
@@ -27,6 +31,8 @@ TextureResult load_texture(char *file_name, TextureType type, GlobalRenderer glo
 	//error handling
 	return texture_result;
     }
+    
+    
     SDL_Surface *img_surface = SDL_CreateRGBSurfaceWithFormatFrom((void*)texture_result.image, texture_result.im_width, texture_result.im_height, 32, 4*texture_result.im_width, SDL_PIXELFORMAT_RGBA32);
     if (img_surface == NULL) {
 	//error handling
@@ -37,7 +43,16 @@ TextureResult load_texture(char *file_name, TextureType type, GlobalRenderer glo
     if (texture_result.texture == NULL) {
 	//error handling
 	return texture_result;
-    }    
+    }
+
+    glGenTextures(1, &(texture_result.gl_texture_id));
+    glBindTexture(GL_TEXTURE_2D, texture_result.gl_texture_id);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture_result.im_width, texture_result.im_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_result.image);
+    
     texture_result.loaded = true;
     return texture_result;
 }

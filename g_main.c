@@ -12,6 +12,7 @@
 #include "gmo_types.h"
 #include "gmo_math.h"
 #include "gmo_sound.h"
+#include "gmo_utils.h"
 
 #include "sdl_util.h"
 #include "g_gamedefs.h"
@@ -35,7 +36,11 @@
  *aka a framebuffer
  *
  *Can I do it so I have the renderer AND
- *OpenGL? And switch between?
+ *OpenGL? And switch between? YES
+ *
+ *Next step: render scenes using opengl
+ *
+ *Shader loading etc
  *
  *Also I can see now why we want a texture atlas:
  *because we can only load so many individual textures in, but have lots of space
@@ -59,7 +64,6 @@ void editor_update_and_render(SDL_Renderer *sdl_renderer, SDL_Rect **editor_rect
 
 void game_update_and_render(SDL_Renderer *sdl_renderer, Entity *player, bool *g_running, int32 *mouse_x, int32 *mouse_y);
 
-void game_update_and_render_opengl(SDL_Renderer *sdl_renderer, Entity *player, bool *g_running, int32 *mouse_x, int32 *mouse_y);
 
 void update_game_state(GameState *game_state, GlobalRenderer global_renderer, GameResource game_resources, bool *g_running);
 
@@ -69,6 +73,10 @@ int main(int argc, char **argv)
 {
 
     /* SDL Init */
+
+    test_read_file("quad.vert");
+
+    test_concatenate("abc", "def");
 
     SDL_Window *sdl_window;
 
@@ -95,8 +103,8 @@ int main(int argc, char **argv)
     GlobalRenderer global_renderer;
     global_renderer.sdl_renderer = sdl_renderer;
     global_renderer.gl_context = gl_context;
-
-    
+    global_renderer.active_renderer = SOFTWARE_RENDERER;
+    global_renderer.window = sdl_window;
     /* OpenAL init */
     ALCdevice *al_device;
     alGetError();
@@ -119,6 +127,7 @@ int main(int argc, char **argv)
     /* load some images */
     GameResource game_resources;
     //TODO: make OPENGL version
+    //game_resources.shaders = load_shaders(global_renderer);
     game_resources.textures = load_textures(global_renderer);
     game_resources.sound_sources = load_static_sources(al_context);
     game_resources.sound_buffers = load_sound_buffers(al_context);
@@ -207,9 +216,6 @@ int main(int argc, char **argv)
 }
 
 
-void game_update_and_render_opengl(SDL_Renderer *sdl_renderer, Entity *player, bool *g_running, int32 *mouse_x, int32 *mouse_y)
-{
-}
 
 void game_update_and_render(SDL_Renderer *sdl_renderer, Entity *player, bool *g_running, int32 *mouse_x, int32 *mouse_y)
 {
@@ -317,7 +323,7 @@ void update_game_state(GameState *game_state, GlobalRenderer global_renderer, Ga
     switch (game_state->current_state) {
     case GAME_TITLE:
     {
-	do_title(game_state, global_renderer.sdl_renderer, game_resources, g_running);
+	do_title(game_state, global_renderer, game_resources, g_running);
 	break;
     }
     case GAME_OVER:
@@ -326,12 +332,12 @@ void update_game_state(GameState *game_state, GlobalRenderer global_renderer, Ga
     }
     case GAME_LAKE:
     {
-	do_lake(game_state, global_renderer.sdl_renderer, game_resources, g_running);
+	do_lake(game_state, global_renderer, game_resources, g_running);
 	break;
     }
     case GAME_FISHING:
     {
-	do_fishing(game_state, global_renderer.sdl_renderer, game_resources, g_running);
+	do_fishing(game_state, global_renderer, game_resources, g_running);
 	break;
     }
 
