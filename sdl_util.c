@@ -14,8 +14,28 @@ char *g_texture_names[NUM_TEX] = {
     "art/ripple-sheet.png"
 };
 
+char *g_shader_names[NUM_SHADERS] = {
+    "shaders/quad"
+};
 
 
+#define QUAD_VERTEX_COUNT 20
+real32 g_quad_vertices[QUAD_VERTEX_COUNT] = {
+	//vertex 1, texture 1 bottom left
+	-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+	//vertex 2, texture 2 bottom right
+	1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+	//vertex 3, texture 3 top left
+	-1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+	//vertex 4, texture 4 top right
+	1.0f, 1.0f, 0.0f, 1.0f, 1.0f
+};
+
+#define QUAD_INDEX_COUNT 6
+uint32 g_quad_indices[QUAD_INDEX_COUNT] = {
+    0, 1, 2,
+    2, 1, 3
+};
 
 
 TextureResult load_texture(char *file_name, TextureType type, GlobalRenderer global_renderer)
@@ -64,4 +84,108 @@ TextureResult *load_textures(GlobalRenderer global_renderer)
 	textures[i] = load_texture(g_texture_names[i], i, global_renderer);
     }
     return textures;    
+}
+
+uint32 load_shader(char *file_name, GLenum shader_type)
+{
+    char *source = read_file(file_name);
+    uint32 result = glCreateShader(shader_type);
+    glShaderSource(result, 1, &source, NULL);
+    glCompileShader(result);
+    int shader_success;
+    char shader_info_log[512];
+    glGetShaderiv(result, GL_COMPILE_STATUS, &shader_success);
+    if (!shader_success) {
+	glGetShaderInfoLog(result, 512, NULL, shader_info_log);
+	printf("%s\n", shader_info_log);
+	return 0; //this might be a problem no? i think must be non-zero for success tho
+    }
+    return result;
+}
+
+uint32 load_shader_program(char *file_name)
+{
+    char *vertex_file_name = string_concatenate(file_name, ".vert");
+    char *fragment_file_name = string_concatenate(file_name, ".frag");
+    uint32 vs = load_shader(vertex_file_name, GL_VERTEX_SHADER);
+    uint32 fs = load_shader(fragment_file_name, GL_FRAGMENT_SHADER);
+    
+    uint32 result = glCreateProgram();
+    glAttachShader(result, vs);
+    glAttachShader(result, fs);
+    glLinkProgram(result);
+
+    int shader_success;
+    char shader_info_log[512];
+    glGetShaderiv(result, GL_LINK_STATUS, &shader_success);
+    if (!shader_success) {
+	glGetProgramInfoLog(result, 512, NULL, shader_info_log);
+	printf("%s\n", shader_info_log);
+	return 0; //this might be a problem no? i think must be non-zero for success tho
+    }
+    glDeleteShader(vs);
+    glDeleteShader(fs);
+    return result;
+    
+}
+
+uint32 *load_shader_programs(void)
+{
+    uint32 *result = (uint32*)malloc(sizeof(uint32) * NUM_SHADERS);
+    for (int i = 0; i < NUM_SHADERS; i++) {
+	result[i] = load_shader_program(g_shader_names[i]);
+    }
+    return result;
+}
+
+uint32 *create_vaos()
+{
+    uint32 *result = (uint32*)malloc(sizeof(uint32) * NUM_VAOS);
+    for (int i = 0; i < NUM_VAOS; i++) {
+	glGenVertexArrays(1, &result[i]);
+	
+    }
+    return result;
+}
+
+
+//should probably roll the following into a single function
+void set_vaos(GameResource game_resources)
+{
+    for (int i = 0; i < NUM_VAOS; i++) {
+	glBindVertexArray(game_resources.vaos[i]);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(real32), (void*)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 6 * sizeof(real32), (void*)3);
+	glEnableVertexAttribArray(1);
+    }
+}
+
+uint32 *load_ebos(GameResource game_resources)
+{
+    uint32 *result = (uint32*)malloc(sizeof(uint32) * NUM_EBOS);
+    for (int i = 0; i < NUM_EBOS; i++) {
+	glBindVertexArray(game_resources.vaos[i]);
+	glGenBuffers(1, &result[i]);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, result[i]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32) * QUAD_INDEX_COUNT, g_quad_indices, GL_STATIC_DRAW);
+	
+    }
+    return result;
+}
+
+uint32 *load_vbos(GameResource game_resources)
+{
+    uint32 *result = (uint32*)malloc(sizeof(uint32) * NUM_VBOS);
+    //temporarily just support one quad vbo, later switch to loading in the data
+    for (int i = 0; i < NUM_VBOS; i++) {
+	glBindVertexArray(game_resources.vaos[i]);
+	glGenBuffers(1, &result[i]);
+	glBindBuffer(GL_ARRAY_BUFFER, result[i]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(real32) * QUAD_VERTEX_COUNT, g_quad_vertices, GL_STATIC_DRAW);
+	
+	
+    }
+
+    return result;
 }

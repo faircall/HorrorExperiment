@@ -8,7 +8,8 @@
 #include <stdlib.h>
 #include "SDL.h"
 #include "gmo_types.h"
-
+#include "gmo_utils.h"
+#include "gmo_sound.h"
 #include <GL/glew.h>
 
 typedef enum {
@@ -32,6 +33,22 @@ typedef enum {
     NUM_SHADERS,
 } ShaderType;
 
+typedef enum {
+    QUAD_VAO,
+    NUM_VAOS,
+} VaoType;
+//these should actually be coupeld together I think?
+typedef enum {
+    QUAD_VBO,
+    NUM_VBOS,
+} VboType;
+
+typedef enum {
+    QUAD_EBO,
+    NUM_EBOS,
+} EboType;
+
+
 typedef struct {
     byte *image;
     SDL_Texture *texture;
@@ -50,8 +67,36 @@ typedef struct {
     SDL_Window *window;
 } GlobalRenderer;//can set to NULL if needed, which is nice
 
+typedef struct {
+    real32 *data;
+    int32 length;
+} VertexArray;
+
+typedef struct {
+    ALuint *sound_sources;
+    ALuint *sound_buffers;
+    TextureResult *textures;
+    uint32 *shaders;
+    uint32 *vaos;
+    uint32 *vbos;
+    uint32 *ebos;
+} GameResource;
+
+
 TextureResult load_texture(char *file_name, TextureType type, GlobalRenderer global_renderer);
 TextureResult *load_textures(GlobalRenderer global_renderer);
+
+uint32 load_shader(char *file_name, GLenum shader_type);
+
+uint32 load_shader_program(char *file_name);
+
+uint32 *create_vaos();
+
+uint32 *load_vbos(GameResource game_resources);
+
+uint32 *load_ebos(GameResource game_resources);
+
+void set_vaos(GameResource game_resources);
 
 #define _SDL_UTIL_H_
 #endif

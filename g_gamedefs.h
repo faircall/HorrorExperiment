@@ -4,10 +4,11 @@
 #include "gmo_types.h"
 #include "gmo_math.h"
 #include "sdl_util.h"
-#include "gmo_sound.h"
+
 
 #define SCREENWIDTH 1280
 #define SCREENHEIGHT 720
+
 
 typedef enum {
     BRAIN_RESTING,
@@ -73,11 +74,6 @@ typedef struct {
     SDL_Rect potential_rect;    
 } RectToSave;
 
-typedef struct {
-    ALuint *sound_sources;
-    ALuint *sound_buffers;
-    TextureResult *textures;
-} GameResource;
 
 
 
