@@ -58,8 +58,8 @@ void list_al_audio_devices(const ALCchar *devices);
 void load_wav(char *file_name, ALvoid **wav_data, Wav_Header *wav_header_in, ALsizei *wav_size);
 ALenum get_al_format(Wav_Header wav_header);
 ALuint al_buffer_from_wav(char *file_name);
-void al_make_source(ALCcontext *al_context, ALuint *al_source, ALuint al_buffer, vec3 position, vec3 velocity, real32 pitch, real32 gain, ALboolean looping);
-ALuint make_source_from_file(ALCcontext *al_context, char *wav_file, vec3 position, vec3 velocity, real32 pitch, real32 gain, ALboolean looping);
+void al_make_source(ALCcontext *al_context, ALuint *al_source, ALuint al_buffer, Vec3 position, Vec3 velocity, real32 pitch, real32 gain, ALboolean looping);
+ALuint make_source_from_file(ALCcontext *al_context, char *wav_file, Vec3 position, Vec3 velocity, real32 pitch, real32 gain, ALboolean looping);
 
 ALuint *load_static_sources(ALCcontext *al_context);
 ALuint *load_sound_buffers(ALCcontext *al_context);

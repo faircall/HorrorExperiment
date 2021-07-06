@@ -112,7 +112,7 @@ ALuint al_buffer_from_wav(char *file_name)
      
 }
 
-void al_make_source(ALCcontext *al_context, ALuint *al_source, ALuint al_buffer, vec3 position, vec3 velocity, real32 pitch, real32 gain, ALboolean looping)
+void al_make_source(ALCcontext *al_context, ALuint *al_source, ALuint al_buffer, Vec3 position, Vec3 velocity, real32 pitch, real32 gain, ALboolean looping)
 {
     alcMakeContextCurrent(al_context);
     ALfloat listener_orientation[] = {0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f};     
@@ -154,7 +154,7 @@ void al_make_source(ALCcontext *al_context, ALuint *al_source, ALuint al_buffer,
     }
 }
 
-ALuint make_source_from_file(ALCcontext *al_context, char *wav_file, vec3 position, vec3 velocity, real32 pitch, real32 gain, ALboolean looping)
+ALuint make_source_from_file(ALCcontext *al_context, char *wav_file, Vec3 position, Vec3 velocity, real32 pitch, real32 gain, ALboolean looping)
 {
     ALuint buffer = al_buffer_from_wav(wav_file);
     ALuint source;
@@ -165,7 +165,7 @@ ALuint make_source_from_file(ALCcontext *al_context, char *wav_file, vec3 positi
 ALuint *load_static_sources(ALCcontext *al_context)
 {
     ALuint *sounds = (ALuint*)malloc(NUM_SOUNDS * sizeof(ALuint));
-    vec3 pos = vec3_init(0.0f, 0.0f, 0.0f);
+    Vec3 pos = vec3_init(0.0f, 0.0f, 0.0f);
     for (uint32 i = 0; i < NUM_SOUNDS; i++) {
 	sounds[i] = make_source_from_file(al_context, g_sound_names[i], pos, pos, 1.0f, 1.0f, AL_TRUE);
     }

@@ -1,6 +1,6 @@
 #include "g_gameutils.h"
 
-Entity entity_init(int32 id, vec2 position, vec2 heading, vec2 last_heading, vec2 velocity, vec2 acceleration, real32 acceleration_value, real32 max_speed, bool attacking, real32 health, SDL_Rect rect, BRAIN_STATE brain_state)
+Entity entity_init(int32 id, Vec2 position, Vec2 heading, Vec2 last_heading, Vec2 velocity, Vec2 acceleration, real32 acceleration_value, real32 max_speed, bool attacking, real32 health, SDL_Rect rect, BRAIN_STATE brain_state)
 {
     Entity result;
     result.id = id;

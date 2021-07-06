@@ -7,7 +7,7 @@
 #include "gmo_sound.h"
 #include "g_gamedefs.h"
 
-Entity entity_init(int32 id, vec2 position, vec2 heading, vec2 last_heading, vec2 velocity, vec2 acceleration, real32 acceleration_value, real32 max_speed, bool attacking, real32 health, SDL_Rect rect, BRAIN_STATE brain_state);
+Entity entity_init(int32 id, Vec2 position, Vec2 heading, Vec2 last_heading, Vec2 velocity, Vec2 acceleration, real32 acceleration_value, real32 max_speed, bool attacking, real32 health, SDL_Rect rect, BRAIN_STATE brain_state);
 
 SDL_Rect rect_init(real32 x, real32 y, real32 w, real32 h);
 RectToSave rect_to_save_init(real32 x, real32 y, real32 w, real32 h);

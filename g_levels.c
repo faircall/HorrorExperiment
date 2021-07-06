@@ -210,10 +210,10 @@ void do_fishing(GameState *game_state, GlobalRenderer global_renderer, GameResou
 		//we will flip this if the direction of the fish
 		//is negative
 		if (fish_direction_x == -1) {
-		SDL_RenderCopy(sdl_renderer, game_resources.textures[RIPPLE_TEX].texture, &t_ripple_rect_src, &t_ripple_rect_dst);
+		SDL_RenderCopy(global_renderer.sdl_renderer, game_resources.textures[RIPPLE_TEX].texture, &t_ripple_rect_src, &t_ripple_rect_dst);
 		} else {
 		    t_ripple_rect_dst = rect_init(game_state->water_ripples[i].location.x - 50.0f, game_state->water_ripples[i].location.y, 32*3, 32*3);
-		    SDL_RenderCopyEx(sdl_renderer, game_resources.textures[RIPPLE_TEX].texture, &t_ripple_rect_src, &t_ripple_rect_dst, 180.0f, NULL, SDL_FLIP_VERTICAL);
+		    SDL_RenderCopyEx(global_renderer.sdl_renderer, game_resources.textures[RIPPLE_TEX].texture, &t_ripple_rect_src, &t_ripple_rect_dst, 180.0f, NULL, SDL_FLIP_VERTICAL);
 		}
 		//SDL_RenderFillRect(sdl_renderer, &t_ripple_rect_dst);
 	    }
@@ -231,19 +231,19 @@ void do_fishing(GameState *game_state, GlobalRenderer global_renderer, GameResou
 
 	SDL_Rect fish_rect = rect_init(game_state->fish_location.x, game_state->fish_location.y, 20, 20);
 
-	SDL_RenderFillRect(sdl_renderer, &fish_rect);
+	SDL_RenderFillRect(global_renderer.sdl_renderer, &fish_rect);
 	
 	if (draw_rod_mid == 1) {
 	    SDL_Rect rod_mid_rect = rect_init(SCREENWIDTH/2 - 75, SCREENHEIGHT/2 + 6, 152, 166*3);
-	    SDL_RenderCopy(sdl_renderer, game_resources.textures[ROD_MID_TEX].texture, NULL, &rod_mid_rect);
+	    SDL_RenderCopy(global_renderer.sdl_renderer, game_resources.textures[ROD_MID_TEX].texture, NULL, &rod_mid_rect);
 	} else if (draw_rod_mid == -1) {
 	    SDL_Rect rod_mid_rect = rect_init(SCREENWIDTH/2 - 80 , SCREENHEIGHT/2 + 6, 152, 166*3);
-	    SDL_RenderCopy(sdl_renderer, game_resources.textures[ROD_MID_TEX].texture, NULL, &rod_mid_rect);
+	    SDL_RenderCopy(global_renderer.sdl_renderer, game_resources.textures[ROD_MID_TEX].texture, NULL, &rod_mid_rect);
 	} else {
-	    SDL_RenderCopyEx(sdl_renderer, game_resources.textures[ROD_TEX].texture, NULL, &rod_move_rect, 0, NULL, flip);
+	    SDL_RenderCopyEx(global_renderer.sdl_renderer, game_resources.textures[ROD_TEX].texture, NULL, &rod_move_rect, 0, NULL, flip);
 	}
 	
-	SDL_RenderPresent(sdl_renderer);
+	SDL_RenderPresent(global_renderer.sdl_renderer);
 	//need a test here
 	//wrap the below
 	ALint al_source_state;

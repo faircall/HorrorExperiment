@@ -48,6 +48,12 @@ typedef enum {
     NUM_EBOS,
 } EboType;
 
+typedef enum {
+    QUAD_PERSPECTIVE_UNIFORM,
+    QUAD_TEXTURE_UNIFORM,
+    NUM_SHADER_UNIFORMS
+} ShaderUniformType;
+
 
 typedef struct {
     byte *image;
@@ -65,6 +71,7 @@ typedef struct {
     SDL_GLContext *gl_context;
     ActiveRenderer active_renderer;
     SDL_Window *window;
+    Mat4 perspective_matrix;
 } GlobalRenderer;//can set to NULL if needed, which is nice
 
 typedef struct {
@@ -77,6 +84,7 @@ typedef struct {
     ALuint *sound_buffers;
     TextureResult *textures;
     uint32 *shaders;
+    int32 *shader_uniforms;
     uint32 *vaos;
     uint32 *vbos;
     uint32 *ebos;
@@ -97,6 +105,8 @@ uint32 *load_vbos(GameResource game_resources);
 uint32 *load_ebos(GameResource game_resources);
 
 void set_vaos(GameResource game_resources);
+
+int32 *load_shader_uniforms(GameResource game_resources);
 
 #define _SDL_UTIL_H_
 #endif

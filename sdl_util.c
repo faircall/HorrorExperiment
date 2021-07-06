@@ -18,17 +18,24 @@ char *g_shader_names[NUM_SHADERS] = {
     "shaders/quad"
 };
 
+char *g_shader_uniforms[NUM_SHADER_UNIFORMS] = {
+    "perspective",
+    "texture_to_draw",
+
+    
+};
+
 
 #define QUAD_VERTEX_COUNT 20
 real32 g_quad_vertices[QUAD_VERTEX_COUNT] = {
 	//vertex 1, texture 1 bottom left
-	-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+	-1.0f, -1.0f, 10.0f, 0.0f, 0.0f,
 	//vertex 2, texture 2 bottom right
-	1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+	1.0f, -1.0f, 10.0f, 1.0f, 0.0f,
 	//vertex 3, texture 3 top left
-	-1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+	-1.0f, 1.0f, 10.0f, 0.0f, 1.0f,
 	//vertex 4, texture 4 top right
-	1.0f, 1.0f, 0.0f, 1.0f, 1.0f
+	1.0f, 1.0f, 10.0f, 1.0f, 1.0f
 };
 
 #define QUAD_INDEX_COUNT 6
@@ -138,6 +145,25 @@ uint32 *load_shader_programs(void)
     return result;
 }
 
+int32 *load_shader_uniforms(GameResource game_resources)
+{
+    //need to add a cross-reference table here (assoc. array?)
+    int32 *result = (int32*)malloc(sizeof(int32) * NUM_SHADER_UNIFORMS);
+
+    for (int i = 0; i < NUM_SHADER_UNIFORMS; i++) {
+	//somethign like this
+	if (i >= QUAD_PERSPECTIVE_UNIFORM && i <= QUAD_TEXTURE_UNIFORM) {
+	    result[i] = glGetUniformLocation(game_resources.shaders[QUAD_SHADER], g_shader_uniforms[i]);
+	} else {
+	    return NULL;
+	}
+
+    }
+    
+    return result;
+}
+       
+
 uint32 *create_vaos()
 {
     uint32 *result = (uint32*)malloc(sizeof(uint32) * NUM_VAOS);
@@ -154,9 +180,9 @@ void set_vaos(GameResource game_resources)
 {
     for (int i = 0; i < NUM_VAOS; i++) {
 	glBindVertexArray(game_resources.vaos[i]);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(real32), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(real32), (void*)0);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 6 * sizeof(real32), (void*)3);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(real32), (void*)3);
 	glEnableVertexAttribArray(1);
     }
 }
@@ -188,4 +214,10 @@ uint32 *load_vbos(GameResource game_resources)
     }
 
     return result;
+}
+
+void set_static_uniforms(GlobalRenderer global_renderer, GameResource game_resources)
+{
+    glUseProgram(game_resources.shaders[QUAD_SHADER]);
+    glUniformMatrix4fv(game_resources.shader_uniforms[QUAD_SHADER], 1, GL_FALSE, global_renderer.perspective_matrix.elements);
 }

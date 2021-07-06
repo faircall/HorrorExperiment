@@ -3,6 +3,8 @@
 #include "gmo_math.h"
 #include "g_gamedefs.h"
 
+
+
 //start filling out some opengl stuff here
 void draw_rect(real32 x, real32 y, real32 width, real32 height)
 {
@@ -36,7 +38,15 @@ void draw_texture_at(GlobalRenderer global_renderer, GameResource game_resources
 	SDL_RenderCopy(global_renderer.sdl_renderer, game_resources.textures[texture_type].texture, &source_rect, &dest_rect);
 	
     } else if (global_renderer.active_renderer == OPENGL_RENDERER) {
-	
+	glUseProgram(game_resources.shaders[QUAD_SHADER]);
+	glUniform1i(game_resources.shader_uniforms[QUAD_TEXTURE_UNIFORM], 0);
+	//i I think it's gonna be this guy
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, game_resources.textures[texture_type].gl_texture_id);
+	glBindVertexArray(game_resources.vaos[QUAD_VAO]);
+	//texture location?
+	//elemetn count?
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     }
 }
 
@@ -47,11 +57,23 @@ void draw_rotated_texture_at(GlobalRenderer global_renderer, GameResource game_r
 	int32 width = game_resources.textures[texture_type].im_width;
 	int32 height = game_resources.textures[texture_type].im_height;
 	SDL_Rect source_rect = rect_init(source_x, source_y, width, height);
-	SDL_Rect dest_rect = rect_init(dest_x, dest_y, width?, height?);
+	SDL_Rect dest_rect = rect_init(dest_x, dest_y, width, height);
 	SDL_RenderCopyEx(global_renderer.sdl_renderer, game_resources.textures[texture_type].texture, &source_rect, &dest_rect, angle, NULL, SDL_FLIP_VERTICAL);
 	
     } else if (global_renderer.active_renderer == OPENGL_RENDERER) {
-	
+	/*
+	 * Warning!!
+	 * Placeholder!
+	 * Not actually correct here!!!! */
+	glUseProgram(game_resources.shaders[QUAD_SHADER]);
+	glUniform1i(game_resources.shader_uniforms[QUAD_TEXTURE_UNIFORM], 0);
+	//i I think it's gonna be this guy
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, game_resources.textures[texture_type].gl_texture_id);
+	glBindVertexArray(game_resources.vaos[QUAD_VAO]);
+	//texture location?
+	//elemetn count?
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     }
 }
 
@@ -61,6 +83,20 @@ void draw_texture_fullscreen(GlobalRenderer global_renderer, GameResource game_r
 	SDL_RenderCopy(global_renderer.sdl_renderer, game_resources.textures[texture_type].texture, NULL, NULL);
 
     } else if (global_renderer.active_renderer == OPENGL_RENDERER) {
+
+		/*
+	 * Warning!!
+	 * Placeholder!
+	 * Not actually correct here!!!! */
+	glUseProgram(game_resources.shaders[QUAD_SHADER]);
+	glUniform1i(game_resources.shader_uniforms[QUAD_TEXTURE_UNIFORM], 0);
+	//i I think it's gonna be this guy
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, game_resources.textures[texture_type].gl_texture_id);
+	glBindVertexArray(game_resources.vaos[QUAD_VAO]);
+	//texture location?
+	//elemetn count?
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 	
     }
 }

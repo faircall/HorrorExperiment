@@ -34,11 +34,11 @@ typedef enum {
 
 typedef struct {
     int32 id;
-    vec2 position;
-    vec2 heading;
-    vec2 last_heading;
-    vec2 velocity;
-    vec2 acceleration;
+    Vec2 position;
+    Vec2 heading;
+    Vec2 last_heading;
+    Vec2 velocity;
+    Vec2 acceleration;
     real32 acceleration_value;
     real32 max_speed;
     bool attacking;
@@ -52,7 +52,7 @@ typedef struct {
 } Entity;
 
 typedef struct {
-    vec2 location;
+    Vec2 location;
     real32 timer;
     bool animation_playing;
     int32 animation_frame;
@@ -65,7 +65,7 @@ typedef struct {
     int32 high_score;
     real32 dt;
     real32 total_time_ms;
-    vec2 fish_location;
+    Vec2 fish_location;
     WaterRipple *water_ripples;
 } GameState;
 

@@ -40,7 +40,14 @@
  *
  *Next step: render scenes using opengl
  *
- *Shader loading etc
+ *
+ *Shader loading done
+ *vaos and vbos
+ *
+ *I think what's happening is it's just drawing a tiny portion of the texture to the fullscreen, so we need a camera of some kind.
+ *
+ *actually, will also need a transform matrix to move our shit in front of the camera,
+ *or hardcode the quads to be behind?
  *
  *Also I can see now why we want a texture atlas:
  *because we can only load so many individual textures in, but have lots of space
@@ -74,9 +81,9 @@ int main(int argc, char **argv)
 
     /* SDL Init */
 
-    test_read_file("quad.vert");
 
-    test_concatenate("abc", "def");
+
+
 
     SDL_Window *sdl_window;
 
@@ -103,8 +110,11 @@ int main(int argc, char **argv)
     GlobalRenderer global_renderer;
     global_renderer.sdl_renderer = sdl_renderer;
     global_renderer.gl_context = gl_context;
-    global_renderer.active_renderer = SOFTWARE_RENDERER;
+    //global_renderer.active_renderer = SOFTWARE_RENDERER;
+    global_renderer.active_renderer = OPENGL_RENDERER;
     global_renderer.window = sdl_window;
+    global_renderer.perspective_matrix = mat4_create_perspective(60.0f, (float)SCREENWIDTH/(float)SCREENHEIGHT, 0.1f, 100.0f);
+    
     /* OpenAL init */
     ALCdevice *al_device;
     alGetError();
@@ -127,10 +137,17 @@ int main(int argc, char **argv)
     /* load some images */
     GameResource game_resources;
     //TODO: make OPENGL version
-    //game_resources.shaders = load_shaders(global_renderer);
+    game_resources.shaders = load_shader_programs();
+    game_resources.shader_uniforms = load_shader_uniforms(game_resources);
+
     game_resources.textures = load_textures(global_renderer);
     game_resources.sound_sources = load_static_sources(al_context);
     game_resources.sound_buffers = load_sound_buffers(al_context);
+    game_resources.vaos = create_vaos();
+    game_resources.vbos = load_vbos(game_resources);
+    game_resources.ebos = load_ebos(game_resources);
+    set_vaos(game_resources);
+    set_static_uniforms(global_renderer, game_resources);
     /* load sounds*/
 
     //wrap this
@@ -276,14 +293,14 @@ void game_update_and_render(SDL_Renderer *sdl_renderer, Entity *player, bool *g_
 	player->heading = vec2_normalize(player->heading);
 	player->last_heading = player->heading;
     }
-    player->acceleration = vec2_scale(player->acceleration_value, player->heading);
+    player->acceleration = vec2_scale(player->heading, player->acceleration_value);
     player->velocity.x += player->acceleration.x * dt;
     player->velocity.y += player->acceleration.y * dt;
         
     real32 player_speed = vec2_mag(player->velocity);
     if (player_speed > velocity_epsilon) {
-	vec2 friction = vec2_normalize(player->velocity);
-	friction = vec2_scale(-friction_value, friction);
+	Vec2 friction = vec2_normalize(player->velocity);
+	friction = vec2_scale(friction, -friction_value);
 	player->velocity.x += friction.x * dt;
 	player->velocity.y += friction.y * dt;
     }
@@ -291,7 +308,7 @@ void game_update_and_render(SDL_Renderer *sdl_renderer, Entity *player, bool *g_
     player_speed = vec2_mag(player->velocity);
     if (player_speed > player->max_speed) {
 	player->velocity = vec2_normalize(player->velocity);
-	player->velocity = vec2_scale(player->max_speed, player->velocity);
+	player->velocity = vec2_scale(player->velocity, player->max_speed);
     }
         
     /* final integration */

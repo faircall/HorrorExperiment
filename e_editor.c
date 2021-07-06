@@ -33,10 +33,10 @@ typedef struct {
 typedef struct {
     Mouse_Grid_Result *buffer;//this is more like endpoints
     int count;
-    vec3 vec3_value;
+    Vec3 vec3_value;
 } Selection_Buffer;
 
-int32 vec3_to_int32(vec3 a);
+int32 vec3_to_int32(Vec3 a);
 
 Mouse_Grid_Result get_mouse_grid(int mouse_x, int mouse_y, uint grid_width, uint grid_height);
 
@@ -277,9 +277,9 @@ void scanline_fill(Selection_Buffer *selection_buffer)
     //does every cell have at least 2 neighbouring?
 }
 
-vec3 vec2_to_vec3_normal(vec2 vec2_normal)
+Vec3 vec2_to_vec3_normal(Vec2 vec2_normal)
 {
-    vec3 result = {0.0f, 0.0f, 1.0f};
+    Vec3 result = {0.0f, 0.0f, 1.0f};
     //start off as a vertical line straight up
 
     float mag = vec2_mag(vec2_normal);
@@ -300,7 +300,7 @@ vec3 vec2_to_vec3_normal(vec2 vec2_normal)
     return result;
 }
 
-int32 vec3_to_int32(vec3 a)
+int32 vec3_to_int32(Vec3 a)
 {
 
     //don't think this is working right
@@ -409,10 +409,10 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 
     static bool started_normal = false;
 
-    static vec2 normal_start = {0.0f, 0.0f};
-    static vec2 normal_end = {0.0f, 0.0f};
+    static Vec2 normal_start = {0.0f, 0.0f};
+    static Vec2 normal_end = {0.0f, 0.0f};
 
-    static vec2 normal_to_draw = {0.0f, 0.0f};
+    static Vec2 normal_to_draw = {0.0f, 0.0f};
 	    
 
     //static 
@@ -471,7 +471,7 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 		if (buffer_counter >= selection_buffers_count) {
 		    buffer_counter = 0;
 		}
-		vec3 vec3_current_selection = selection_buffers[buffer_counter].vec3_value;
+		Vec3 vec3_current_selection = selection_buffers[buffer_counter].vec3_value;
 		printf("current selection (%d) has x: %f y: %f z: %f \n", buffer_counter, vec3_current_selection.x, vec3_current_selection.y, vec3_current_selection.z);
 	    }
 
@@ -557,7 +557,7 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 		    started_normal = false;
 
 		    //convert the vec2 to a vec3
-		    vec3 normal_to_add = vec2_to_vec3_normal(normal_to_draw);
+		    Vec3 normal_to_add = vec2_to_vec3_normal(normal_to_draw);
 		    //printf("normal to add was %f %f %f\n", normal_to_add.x, normal_to_add.y, normal_to_add.z);
 		    
 		    //somehow we are only writing this the first time through
@@ -674,7 +674,7 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 	normal_to_draw = vec2_sub(normal_end, normal_start);
 	if (vec2_mag(normal_to_draw) >= 100.0f) {	    
 	    normal_to_draw = vec2_normalize(normal_to_draw);
-	    normal_to_draw = vec2_scale(100.0f, normal_to_draw);
+	    normal_to_draw = vec2_scale(normal_to_draw, 100.0f);
 	}
 	//the 3d normal will be z of 1 - magnitude of the vector,
 	//x will be magntiude * x comp
