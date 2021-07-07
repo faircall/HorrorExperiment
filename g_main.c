@@ -112,6 +112,9 @@ int main(int argc, char **argv)
     global_renderer.gl_context = gl_context;
     //global_renderer.active_renderer = SOFTWARE_RENDERER;
     global_renderer.active_renderer = OPENGL_RENDERER;
+    glEnable(GL_TEXTURE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     global_renderer.window = sdl_window;
     global_renderer.perspective_matrix = mat4_create_perspective(60.0f, (float)SCREENWIDTH/(float)SCREENHEIGHT, 0.1f, 100.0f);
     

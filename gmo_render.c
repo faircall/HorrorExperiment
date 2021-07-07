@@ -39,9 +39,9 @@ void draw_texture_at(GlobalRenderer global_renderer, GameResource game_resources
 	
     } else if (global_renderer.active_renderer == OPENGL_RENDERER) {
 	glUseProgram(game_resources.shaders[QUAD_SHADER]);
-	glUniform1i(game_resources.shader_uniforms[QUAD_TEXTURE_UNIFORM], 0);
+	//glUniform1i(game_resources.shader_uniforms[QUAD_TEXTURE_UNIFORM], 0);
 	//i I think it's gonna be this guy
-	glActiveTexture(GL_TEXTURE0);
+	//glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, game_resources.textures[texture_type].gl_texture_id);
 	glBindVertexArray(game_resources.vaos[QUAD_VAO]);
 	//texture location?
@@ -68,7 +68,7 @@ void draw_rotated_texture_at(GlobalRenderer global_renderer, GameResource game_r
 	glUseProgram(game_resources.shaders[QUAD_SHADER]);
 	glUniform1i(game_resources.shader_uniforms[QUAD_TEXTURE_UNIFORM], 0);
 	//i I think it's gonna be this guy
-	glActiveTexture(GL_TEXTURE0);
+	//glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, game_resources.textures[texture_type].gl_texture_id);
 	glBindVertexArray(game_resources.vaos[QUAD_VAO]);
 	//texture location?
@@ -89,9 +89,9 @@ void draw_texture_fullscreen(GlobalRenderer global_renderer, GameResource game_r
 	 * Placeholder!
 	 * Not actually correct here!!!! */
 	glUseProgram(game_resources.shaders[QUAD_SHADER]);
-	glUniform1i(game_resources.shader_uniforms[QUAD_TEXTURE_UNIFORM], 0);
+	//glUniform1i(game_resources.shader_uniforms[QUAD_TEXTURE_UNIFORM], 0);
 	//i I think it's gonna be this guy
-	glActiveTexture(GL_TEXTURE0);
+	//glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, game_resources.textures[texture_type].gl_texture_id);
 	glBindVertexArray(game_resources.vaos[QUAD_VAO]);
 	//texture location?
