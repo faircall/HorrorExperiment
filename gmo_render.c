@@ -5,6 +5,14 @@
 
 
 
+/*
+ *
+ * More todo: Texture blitting using a UNIFORM for the texture-coords rather than
+ * sending in the vertices up front. Slightly slower but much more flexible methinks?
+ * basically sprite sheet rendering
+ *
+ * */
+
 //start filling out some opengl stuff here
 void draw_rect(real32 x, real32 y, real32 width, real32 height)
 {
@@ -38,10 +46,22 @@ void draw_texture_at(GlobalRenderer global_renderer, GameResource game_resources
 	SDL_RenderCopy(global_renderer.sdl_renderer, game_resources.textures[texture_type].texture, &source_rect, &dest_rect);
 	
     } else if (global_renderer.active_renderer == OPENGL_RENDERER) {
+	//a little trickier cos of size
 	glUseProgram(game_resources.shaders[QUAD_SHADER]);
 	//glUniform1i(game_resources.shader_uniforms[QUAD_TEXTURE_UNIFORM], 0);
 	//i I think it's gonna be this guy
 	//glActiveTexture(GL_TEXTURE0);
+
+	float x_translate = dest_x / (float)SCREENWIDTH;
+	float y_translate = -dest_y / (float)SCREENHEIGHT;
+	float x_scale_ratio = (float)game_resources.textures[texture_type].im_width / (float)game_resources.textures[texture_type].im_height;
+	float x_scale = game_resources.textures[texture_type].im_width / (float)SCREENWIDTH;
+	float y_scale = game_resources.textures[texture_type].im_height / (float)SCREENHEIGHT;
+	Mat4 scale_transform = mat4_create_xyz_scale(x_scale*x_scale_ratio, y_scale, 1.0f);
+	Vec3 translation_vector = vec3_init(x_translate, y_translate, 0.0f);
+	Mat4 translation = mat4_create_translation(translation_vector);
+	Mat4 transform = mat4_mult(translation, scale_transform);
+	glUniformMatrix4fv(game_resources.shader_uniforms[QUAD_TRANSFORM_UNIFORM], 1, GL_FALSE, transform.elements);
 	glBindTexture(GL_TEXTURE_2D, game_resources.textures[texture_type].gl_texture_id);
 	glBindVertexArray(game_resources.vaos[QUAD_VAO]);
 	//texture location?
@@ -62,13 +82,27 @@ void draw_rotated_texture_at(GlobalRenderer global_renderer, GameResource game_r
 	
     } else if (global_renderer.active_renderer == OPENGL_RENDERER) {
 	/*
-	 * Warning!!
-	 * Placeholder!
+	 *This will be hard to get right
+	 *
 	 * Not actually correct here!!!! */
 	glUseProgram(game_resources.shaders[QUAD_SHADER]);
 	glUniform1i(game_resources.shader_uniforms[QUAD_TEXTURE_UNIFORM], 0);
 	//i I think it's gonna be this guy
 	//glActiveTexture(GL_TEXTURE0);
+	float x_translate = dest_x / (float)SCREENWIDTH;
+	float y_translate = dest_y / (float)SCREENHEIGHT;
+	float x_scale_ratio = (float)game_resources.textures[texture_type].im_width / (float)game_resources.textures[texture_type].im_height;
+	float x_scale = game_resources.textures[texture_type].im_width / (float)SCREENWIDTH;
+	float y_scale = game_resources.textures[texture_type].im_height / (float)SCREENHEIGHT;
+	Mat3 mat3_rotation = mat3_create_rotate_z(angle);
+	Mat4 mat4_rotation = mat4_create_rotation(mat3_rotation);
+	
+	Mat4 scale_transform = mat4_create_xyz_scale(x_scale*x_scale_ratio, y_scale, 1.0f);
+	Vec3 translation_vector = vec3_init(x_translate, y_translate, 0.0f);
+	Mat4 translation = mat4_create_translation(translation_vector);
+	Mat4 transform = mat4_mult(mat4_mult(mat4_rotation ,translation), scale_transform);
+	glUniformMatrix4fv(game_resources.shader_uniforms[QUAD_TRANSFORM_UNIFORM], 1, GL_FALSE, transform.elements);
+	
 	glBindTexture(GL_TEXTURE_2D, game_resources.textures[texture_type].gl_texture_id);
 	glBindVertexArray(game_resources.vaos[QUAD_VAO]);
 	//texture location?
@@ -89,6 +123,14 @@ void draw_texture_fullscreen(GlobalRenderer global_renderer, GameResource game_r
 	 * Placeholder!
 	 * Not actually correct here!!!! */
 	glUseProgram(game_resources.shaders[QUAD_SHADER]);
+	Mat4 mat4_identity = mat4_create_identity();
+	//what do we scale BY exactly?
+	//just assume height is 'constant' and
+	//scale by the change in width?
+	float x_scale_ratio = ((float)game_resources.textures[texture_type].im_width)/((float)game_resources.textures[texture_type].im_height);//optimize by calculating this once upon creation and storing
+	Mat4 mat4_scale = mat4_create_xyz_scale(x_scale_ratio, 1.0f, 1.0f);
+	
+	glUniformMatrix4fv(game_resources.shader_uniforms[QUAD_TRANSFORM_UNIFORM], 1, GL_FALSE, mat4_scale.elements);
 	//glUniform1i(game_resources.shader_uniforms[QUAD_TEXTURE_UNIFORM], 0);
 	//i I think it's gonna be this guy
 	//glActiveTexture(GL_TEXTURE0);
