@@ -174,6 +174,8 @@ Mat4 mat4_create_translation_rotation(Mat3 rotation, Vec3 t);
 Mat4 mat4_create_rotation(Mat3 rotation);
 
 Mat4 mat4_create_perspective(float fovy, float s, float n, float f);
+Mat4 mat4_create_simple_orthographic(float width, float height, float depth);
+Mat4 mat4_create_orthographic(float left, float right, float top, float bottom, float near, float far);
 
 float cos_deg(float angle);
 float sin_deg(float angle);

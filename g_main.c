@@ -20,7 +20,7 @@
 #include "g_gameutils.h"
 #include "e_editor.h"
 
-//add glew etc
+
 
 //#include "gmo_render.h"
 #include <windows.h>
@@ -29,6 +29,10 @@
 //#define RENDERER_SOFTWARE
 
 /*
+ *Bigger todo:
+ *abstract input handling so we just do it once per frame (at the start?) regardless
+ *and don't have to continually copy that code etc
+ *
  *Bigger todo:
  *shift over to OpenGL rendering
  *
@@ -40,14 +44,8 @@
  *
  *Next step: render scenes using opengl
  *
- *
- *Shader loading done
- *vaos and vbos
- *
- *I think what's happening is it's just drawing a tiny portion of the texture to the fullscreen, so we need a camera of some kind.
- *
- *actually, will also need a transform matrix to move our shit in front of the camera,
- *or hardcode the quads to be behind?
+ *Almost have parity, now to see what's up with framerate
+ *in software vs opengl
  *
  *Also I can see now why we want a texture atlas:
  *because we can only load so many individual textures in, but have lots of space
@@ -116,7 +114,11 @@ int main(int argc, char **argv)
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     global_renderer.window = sdl_window;
-    global_renderer.perspective_matrix = mat4_create_perspective(60.0f, (float)SCREENWIDTH/(float)SCREENHEIGHT, 0.1f, 100.0f);
+    //global_renderer.perspective_matrix = mat4_create_perspective(60.0f, (float)SCREENWIDTH/(float)SCREENHEIGHT, 0.1f, 100.0f);
+
+    //global_renderer.perspective_matrix = mat4_create_orthographic(-1.0f, 1.0f, -1.0f, 1.0f, 0.1f, 100.0f);
+
+    global_renderer.perspective_matrix = mat4_create_simple_orthographic(2.0f*(float)SCREENWIDTH/(float)SCREENHEIGHT, 2.0f, 100.0f);
     
     /* OpenAL init */
     ALCdevice *al_device;
@@ -209,7 +211,7 @@ int main(int argc, char **argv)
 	//TODO: make OPENGL version
 	if (game_state.current_state != GAME_EDITOR) {
 	    //TODO: make OPENGL version
-
+	    
 	    update_game_state(&game_state, global_renderer, game_resources, &g_running);
 
 
@@ -221,7 +223,7 @@ int main(int argc, char **argv)
 
 	    editor_update_and_render(sdl_renderer, &game_resources, &editor_rect_list, &num_rects, &rect_storage, &mouse_x, &mouse_y, &g_running, argv[1]);
 
-
+	    
 
 
 
@@ -340,6 +342,11 @@ void game_update_and_render(SDL_Renderer *sdl_renderer, Entity *player, bool *g_
 
 void update_game_state(GameState *game_state, GlobalRenderer global_renderer, GameResource game_resources, bool *g_running)
 {
+    /*
+     * In theory this could be an array of function pointers?
+     * 
+     *
+     */
     switch (game_state->current_state) {
     case GAME_TITLE:
     {

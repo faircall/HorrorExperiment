@@ -446,6 +446,32 @@ Mat4 mat4_create_rotation(Mat3 rotation)
     return result;
 }
 
+Mat4 mat4_create_orthographic(float left, float right, float top, float bottom, float near, float far)
+{
+    Mat4 result = mat4_create_identity();
+    //check that bounds are correct?
+    mat4(result, 0, 0) = 2.0f / (right - left);
+    mat4(result, 1, 1) = 2.0f / (bottom - top);
+    mat4(result, 2, 2) = 1.0f / (far - near);
+
+    mat4(result, 0, 3) = (-1.0f * (right + left))/ (right - left);
+    mat4(result, 1, 3) = (-1.0f * (bottom + top)) / (bottom - top);
+    mat4(result, 2, 3) = (-1.0f * near) / (far - near);
+    return result;
+}
+
+Mat4 mat4_create_simple_orthographic(float width, float height, float depth)
+{
+    Mat4 result = mat4_create_identity();
+    //check that bounds are correct?
+    mat4(result, 0, 0) = 2.0f / width;
+    mat4(result, 1, 1) = 2.0f / height;
+    mat4(result, 2, 2) = 1.0f / depth;
+
+
+    return result;
+}
+
 Mat4 mat4_create_perspective(float fovy, float aspect, float near, float far)
 {
     //s is aspect_ratio
