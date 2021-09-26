@@ -25,6 +25,7 @@ typedef enum {
     ROD_TEX,
     ROD_MID_TEX,
     RIPPLE_TEX,
+    OCEAN_TEX_NORMAL,
     NUM_TEX,
 } TextureType;
 
@@ -50,7 +51,10 @@ typedef enum {
 
 typedef enum {
     QUAD_PERSPECTIVE_UNIFORM,
+    QUAD_TRANSFORM_UNIFORM,
     QUAD_TEXTURE_UNIFORM,
+    QUAD_NORMAL_UNIFORM,
+    QUAD_LIGHT_UNIFORM,
     NUM_SHADER_UNIFORMS
 } ShaderUniformType;
 

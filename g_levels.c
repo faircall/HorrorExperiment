@@ -1,6 +1,6 @@
 #include "g_levels.h"
 
-void do_title(GameState *game_state, GlobalRenderer global_renderer, GameResource game_resources, bool *g_running)
+void do_title(GameState *game_state, GlobalRenderer *global_renderer, GameResource game_resources, bool *g_running)
 {
     	SDL_Event sdl_event;
 
@@ -16,9 +16,38 @@ void do_title(GameState *game_state, GlobalRenderer global_renderer, GameResourc
 	SDL_RenderCopy(sdl_renderer, game_resources.textures[OCEAN_TEX].texture, NULL, NULL);
 	SDL_RenderPresent(sdl_renderer);
 	#endif
-	set_background_color(global_renderer, 0xbf, 0x00, 0xaf, 0xff);
-	draw_texture_fullscreen(global_renderer, game_resources, OCEAN_TEX);
-	update_screen(global_renderer);
+
+	static real32 light_movement = 0.0f;
+	static int32 light_direction = 1;
+	light_movement += (game_state->dt * light_direction * 0.5f);
+	
+	if (light_movement > 1.0f) {
+	    light_movement = 1.0f;
+	    light_movement -= (game_state->dt * light_direction);
+	    light_direction = -1;
+	}
+	if (light_movement < -1.0f) {
+	    light_movement = -1.0f;
+	    light_movement -= (game_state->dt * light_direction);
+	    light_direction = 1;
+	}
+
+	Vec3 light = vec3_init(light_movement,  0.5f, 5.0f);
+	
+	//pass it into a uniform here
+	//game_resources.shader_uniforms
+
+	//how to load the normal map?
+		
+	set_background_color(*global_renderer, 0xbf, 0x00, 0xaf, 0xff);
+	/*
+	 * Make this into a draw_texture_fullscreen_with_normal call
+	 */
+	//draw_texture_fullscreen(*global_renderer, game_resources, OCEAN_TEX);
+	draw_texture_fullscreen_with_normal(*global_renderer, game_resources, OCEAN_TEX, OCEAN_TEX_NORMAL, light);
+
+	
+	update_screen(*global_renderer);
 	//need a test here
 	//wrap the below
 	ALint al_source_state;
@@ -56,7 +85,7 @@ void do_title(GameState *game_state, GlobalRenderer global_renderer, GameResourc
 
 }
 
-void do_lake(GameState *game_state, GlobalRenderer global_renderer, GameResource game_resources, bool *g_running)
+void do_lake(GameState *game_state, GlobalRenderer *global_renderer, GameResource game_resources, bool *g_running)
 {
     	SDL_Event sdl_event;
 
@@ -82,9 +111,9 @@ void do_lake(GameState *game_state, GlobalRenderer global_renderer, GameResource
 	SDL_RenderCopy(sdl_renderer, game_resources.textures[LAKE_TEX].texture, NULL, NULL);
 	SDL_RenderPresent(sdl_renderer);
 	#endif 
-	set_background_color(global_renderer, 0xbf, 0x00, 0xaf, 0xff);
-	draw_texture_fullscreen(global_renderer, game_resources, LAKE_TEX);
-	update_screen(global_renderer);
+	set_background_color(*global_renderer, 0xbf, 0x00, 0xaf, 0xff);
+	draw_texture_fullscreen(*global_renderer, game_resources, LAKE_TEX);
+	update_screen(*global_renderer);
 	//need a test here
 	//wrap the below
 	ALint al_source_state;
@@ -132,7 +161,7 @@ void set_rod_rect(int32 mouse_x, int32 mouse_y, SDL_Rect *rect, SDL_RendererFlip
     }
 }
 
-void do_fishing(GameState *game_state, GlobalRenderer global_renderer, GameResource game_resources, bool *g_running)
+void do_fishing(GameState *game_state, GlobalRenderer *global_renderer, GameResource game_resources, bool *g_running)
 {
 
     /*
@@ -161,6 +190,18 @@ void do_fishing(GameState *game_state, GlobalRenderer global_renderer, GameResou
 	}
 	if (sdl_event.type == SDL_MOUSEMOTION) {
 	    SDL_GetMouseState(&mouse_x, &mouse_y);
+	}
+
+	if (sdl_event.type == SDL_KEYDOWN) {
+	    if (sdl_event.key.keysym.scancode == SDL_SCANCODE_R) {
+		if (global_renderer->active_renderer ==SOFTWARE_RENDERER) {
+		    global_renderer->active_renderer = OPENGL_RENDERER;
+		} else {
+		    global_renderer->active_renderer = SOFTWARE_RENDERER;
+		}
+
+		    //alSourceStop(al_source);
+		}
 	}
     }
 
@@ -208,7 +249,7 @@ void do_fishing(GameState *game_state, GlobalRenderer global_renderer, GameResou
     SDL_RenderCopy(sdl_renderer, game_resources.textures[LAKE_FISHING_TEX].texture, NULL, NULL);
 #endif
 
-    draw_texture_fullscreen(global_renderer, game_resources, LAKE_FISHING_TEX);
+    draw_texture_fullscreen(*global_renderer, game_resources, LAKE_FISHING_TEX);
 	
     for (int32 i = 0; i < 4; i++) {
 	if (game_state->water_ripples[i].animation_playing) {
@@ -218,11 +259,11 @@ void do_fishing(GameState *game_state, GlobalRenderer global_renderer, GameResou
 	    //is negative
 	    if (fish_direction_x == -1) {
 		//SDL_RenderCopy(global_renderer.sdl_renderer, game_resources.textures[RIPPLE_TEX].texture, &t_ripple_rect_src, &t_ripple_rect_dst);
-		draw_texture_at(global_renderer, game_resources, RIPPLE_TEX, game_state->water_ripples[i].location.x, game_state->water_ripples[i].location.y, game_state->water_ripples[i].animation_frame * 32, game_state->water_ripples[i].animation_frame * 32, 1.0f, 1.0f);
+		draw_texture_at(*global_renderer, game_resources, RIPPLE_TEX, game_state->water_ripples[i].location.x, game_state->water_ripples[i].location.y, game_state->water_ripples[i].animation_frame * 32, game_state->water_ripples[i].animation_frame * 32, 1.0f, 1.0f);
 	    } else {
 		t_ripple_rect_dst = rect_init(game_state->water_ripples[i].location.x - 50.0f, game_state->water_ripples[i].location.y, 32*3, 32*3);
 		//SDL_RenderCopyEx(global_renderer.sdl_renderer, game_resources.textures[RIPPLE_TEX].texture, &t_ripple_rect_src, &t_ripple_rect_dst, 180.0f, NULL, SDL_FLIP_VERTICAL);
-		draw_texture_at(global_renderer, game_resources, RIPPLE_TEX, game_state->water_ripples[i].location.x, game_state->water_ripples[i].location.y, game_state->water_ripples[i].animation_frame * 32, game_state->water_ripples[i].animation_frame * 32, 1.0f, 1.0f);
+		draw_texture_at(*global_renderer, game_resources, RIPPLE_TEX, game_state->water_ripples[i].location.x, game_state->water_ripples[i].location.y, game_state->water_ripples[i].animation_frame * 32, game_state->water_ripples[i].animation_frame * 32, 1.0f, 1.0f);
 	    }
 	    //SDL_RenderFillRect(sdl_renderer, &t_ripple_rect_dst);
 	}
@@ -240,8 +281,8 @@ void do_fishing(GameState *game_state, GlobalRenderer global_renderer, GameResou
 
     SDL_Rect fish_rect = rect_init(game_state->fish_location.x, game_state->fish_location.y, 20, 20);
 
-    SDL_RenderFillRect(global_renderer.sdl_renderer, &fish_rect);
-    draw_texture_at(global_renderer, game_resources, YUJI_TEX, game_state->fish_location.x, game_state->fish_location.y, 0.0f, 0.0f, 1.0f, 1.0f);
+    SDL_RenderFillRect(global_renderer->sdl_renderer, &fish_rect);
+    draw_texture_at(*global_renderer, game_resources, YUJI_TEX, game_state->fish_location.x, game_state->fish_location.y, 0.0f, 0.0f, 1.0f, 1.0f);
 
     #if 0
     //redo with 3d model or somethign maybe?
@@ -256,7 +297,7 @@ void do_fishing(GameState *game_state, GlobalRenderer global_renderer, GameResou
     }
     #endif
     
-    update_screen(global_renderer);
+    update_screen(*global_renderer);
     //need a test here
     //wrap the below
     ALint al_source_state;

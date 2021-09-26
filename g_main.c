@@ -70,7 +70,7 @@ void editor_update_and_render(SDL_Renderer *sdl_renderer, SDL_Rect **editor_rect
 void game_update_and_render(SDL_Renderer *sdl_renderer, Entity *player, bool *g_running, int32 *mouse_x, int32 *mouse_y);
 
 
-void update_game_state(GameState *game_state, GlobalRenderer global_renderer, GameResource game_resources, bool *g_running);
+void update_game_state(GameState *game_state, GlobalRenderer *global_renderer, GameResource game_resources, bool *g_running);
 
 
 
@@ -109,8 +109,15 @@ int main(int argc, char **argv)
     global_renderer.sdl_renderer = sdl_renderer;
     global_renderer.gl_context = gl_context;
     //global_renderer.active_renderer = SOFTWARE_RENDERER;
+    
     global_renderer.active_renderer = OPENGL_RENDERER;
+
+    //do we want vsync or not?
+    SDL_GL_SetSwapInterval(0);
+    
+    
     glEnable(GL_TEXTURE);
+    
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     global_renderer.window = sdl_window;
@@ -205,6 +212,8 @@ int main(int argc, char **argv)
 	current_time = SDL_GetTicks();
 	total_time_ms = current_time / 1000.0f;
 	dt = (current_time - last_time)/1000.0f;
+	float fps = 1.0f/dt;
+	printf("%f frames per second\n", fps);
 	last_time = current_time;
 	game_state.dt = dt;
 	game_state.total_time_ms = total_time_ms;
@@ -212,7 +221,7 @@ int main(int argc, char **argv)
 	if (game_state.current_state != GAME_EDITOR) {
 	    //TODO: make OPENGL version
 	    
-	    update_game_state(&game_state, global_renderer, game_resources, &g_running);
+	    update_game_state(&game_state, &global_renderer, game_resources, &g_running);
 
 
 
@@ -340,7 +349,7 @@ void game_update_and_render(SDL_Renderer *sdl_renderer, Entity *player, bool *g_
 }
 
 
-void update_game_state(GameState *game_state, GlobalRenderer global_renderer, GameResource game_resources, bool *g_running)
+void update_game_state(GameState *game_state, GlobalRenderer *global_renderer, GameResource game_resources, bool *g_running)
 {
     /*
      * In theory this could be an array of function pointers?

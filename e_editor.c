@@ -336,6 +336,8 @@ void save_normals(Selection_Buffer *selection_buffers, int selection_buffers_cou
 {
     char file_name_buffer[50];
     get_string_stripped(file_name_buffer, 50);
+    char *appended_png;
+    appended_png = string_concatenate(file_name_buffer, ".png");
 
     //we actually want to write a .png file here which is the normal map I believe, to play well with the pixel shader
     //to do that, we first need to set aside a buffer
@@ -369,7 +371,7 @@ void save_normals(Selection_Buffer *selection_buffers, int selection_buffers_cou
 	    image_buffer[current_grid.y*width + current_grid.x] = packed_normal_value;
 	}
     }
-    int image_write_result = stbi_write_png(file_name_buffer, width, height, 4, (void*)image_buffer, width*4);
+    int image_write_result = stbi_write_png(appended_png, width, height, 4, (void*)image_buffer, width*4);
 
     if (!image_write_result) {
 	printf("failed to write the png file\n");

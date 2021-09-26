@@ -11,7 +11,8 @@ char *g_texture_names[NUM_TEX] = {
     "art/fishing_temp.png",
     "art/fishing_pole_temp.png",
     "art/fishing_pole_middle_temp.png",
-    "art/ripple-sheet.png"
+    "art/ripple-sheet.png",
+    "art/firstpng.png",
 };
 
 char *g_shader_names[NUM_SHADERS] = {
@@ -20,40 +21,43 @@ char *g_shader_names[NUM_SHADERS] = {
 
 char *g_shader_uniforms[NUM_SHADER_UNIFORMS] = {
     "perspective",
+    "transform",
     "texture_to_draw",
-
-    
+    "texture_normal",
+    "light",
 };
 
 
 #define QUAD_VERTEX_COUNT 20
 real32 g_quad_vertices[QUAD_VERTEX_COUNT] = {
 	//vertex 1, texture 1 bottom left
-	-1.0f, -1.0f, 10.0f, 0.0f, 0.0f,
+	-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
 	//vertex 2, texture 2 bottom right
-	1.0f, -1.0f, 10.0f, 1.0f, 0.0f,
+	1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
 	//vertex 3, texture 3 top left
-	-1.0f, 1.0f, 10.0f, 0.0f, 1.0f,
+	-1.0f, 1.0f, 0.0f, 0.0f, 1.0f,
 	//vertex 4, texture 4 top right
-	1.0f, 1.0f, 10.0f, 1.0f, 1.0f
+	1.0f, 1.0f, 0.0f, 1.0f, 1.0f
 };
 
 #define QUAD_INDEX_COUNT 6
 uint32 g_quad_indices[QUAD_INDEX_COUNT] = {
-    0, 1, 2,
-    2, 1, 3
+    3, 1, 2,
+    1, 0, 2
 };
 
 
 TextureResult load_texture(char *file_name, TextureType type, GlobalRenderer global_renderer)
-{
-    //add opengl support into this
-    //
+{ 
     //load a 32-bit, rgba texture
     TextureResult texture_result;
     texture_result.type = type;
     texture_result.loaded = false;
+    if (global_renderer.active_renderer == OPENGL_RENDERER) {
+	stbi_set_flip_vertically_on_load(true);
+    }
     texture_result.image = stbi_load(file_name, &texture_result.im_width, &texture_result.im_height, &texture_result.im_channels, 0);
+
     if (texture_result.image == NULL) {
 	//error handling
 	return texture_result;
@@ -78,8 +82,9 @@ TextureResult load_texture(char *file_name, TextureType type, GlobalRenderer glo
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture_result.im_width, texture_result.im_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture_result.image);
     
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture_result.im_width, texture_result.im_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void*)texture_result.image);
+    glGenerateMipmap(GL_TEXTURE_2D);
     texture_result.loaded = true;
     return texture_result;
 }
@@ -152,7 +157,7 @@ int32 *load_shader_uniforms(GameResource game_resources)
 
     for (int i = 0; i < NUM_SHADER_UNIFORMS; i++) {
 	//somethign like this
-	if (i >= QUAD_PERSPECTIVE_UNIFORM && i <= QUAD_TEXTURE_UNIFORM) {
+	if (i >= QUAD_PERSPECTIVE_UNIFORM && i <= QUAD_LIGHT_UNIFORM) {
 	    result[i] = glGetUniformLocation(game_resources.shaders[QUAD_SHADER], g_shader_uniforms[i]);
 	} else {
 	    return NULL;
@@ -182,7 +187,7 @@ void set_vaos(GameResource game_resources)
 	glBindVertexArray(game_resources.vaos[i]);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(real32), (void*)0);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(real32), (void*)3);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(real32), (void*)(3*sizeof(float)));
 	glEnableVertexAttribArray(1);
     }
 }

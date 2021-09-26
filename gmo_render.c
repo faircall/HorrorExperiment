@@ -57,7 +57,8 @@ void draw_texture_at(GlobalRenderer global_renderer, GameResource game_resources
 	//remember 00 is screen centre...
 
 	//some texture swimming happening here?
-	float x_translate = (2.0f*dest_x - SCREENWIDTH)/ ((float)SCREENWIDTH);
+	//float x_translate = (2.0f*dest_x - SCREENWIDTH)/ ((float)SCREENWIDTH);
+	float x_translate = (2.0f*dest_x - SCREENWIDTH) / ((float)SCREENWIDTH);
 	//something something aspect ratio? I can just check the
 	//SDL source code to see how *they* render. Nice.
 	//
@@ -75,7 +76,7 @@ void draw_texture_at(GlobalRenderer global_renderer, GameResource game_resources
 	//normal scaling seemed to be 11x the 64 * 64?
 	
 	Mat4 scale_transform = mat4_create_xyz_scale(y_scale, y_scale, 1.0f);
-	Vec3 translation_vector = vec3_init(x_translate, y_translate, 2.0f);
+	Vec3 translation_vector = vec3_init(x_translate, y_translate, 1.0f);
 	Mat4 translation = mat4_create_translation(translation_vector);
 	Mat4 transform = mat4_mult(translation, scale_transform);
 	//Mat4 transform = mat4_mult(scale_transform, translation);
@@ -155,7 +156,45 @@ void draw_texture_fullscreen(GlobalRenderer global_renderer, GameResource game_r
 	//glUniform1i(game_resources.shader_uniforms[QUAD_TEXTURE_UNIFORM], 0);
 	//i I think it's gonna be this guy
 	//glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, game_resources.textures[texture_type].gl_texture_id);  	
+	glBindVertexArray(game_resources.vaos[QUAD_VAO]);
+	//texture location?
+	//elemetn count?
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+	
+    }
+}
+
+void draw_texture_fullscreen_with_normal(GlobalRenderer global_renderer, GameResource game_resources, TextureType texture_type, TextureType texture_type_normal, Vec3 light_pos)
+{
+    if (global_renderer.active_renderer == SOFTWARE_RENDERER) {
+	SDL_RenderCopy(global_renderer.sdl_renderer, game_resources.textures[texture_type].texture, NULL, NULL);
+
+    } else if (global_renderer.active_renderer == OPENGL_RENDERER) {
+
+		/*
+	 * Warning!!
+	 * Placeholder!
+	 * Not actually correct here!!!! */
+	glUseProgram(game_resources.shaders[QUAD_SHADER]);
+	Mat4 mat4_identity = mat4_create_identity();
+	//what do we scale BY exactly?
+	//just assume height is 'constant' and
+	//scale by the change in width?
+	float x_scale_ratio = ((float)game_resources.textures[texture_type].im_width)/((float)game_resources.textures[texture_type].im_height);//optimize by calculating this once upon creation and storing
+	Mat4 scale_transform = mat4_create_xyz_scale(x_scale_ratio, 1.0f, 1.0f);
+	Vec3 translation_vector = vec3_init(0.0f, 0.0f, x_scale_ratio);
+	Mat4 translation = mat4_create_translation(translation_vector);
+	Mat4 transform = mat4_mult(translation, scale_transform);
+	glUniformMatrix4fv(game_resources.shader_uniforms[QUAD_TRANSFORM_UNIFORM], 1, GL_FALSE, transform.elements);
+	glUniform3f(game_resources.shader_uniforms[QUAD_LIGHT_UNIFORM], light_pos.x, light_pos.y, light_pos.z);
+	//glUniform1i(game_resources.shader_uniforms[QUAD_TEXTURE_UNIFORM], 0);
+	//i I think it's gonna be this guy
+	glActiveTexture(GL_TEXTURE0);	
 	glBindTexture(GL_TEXTURE_2D, game_resources.textures[texture_type].gl_texture_id);
+	glActiveTexture(GL_TEXTURE1);	
+	glBindTexture(GL_TEXTURE_2D, game_resources.textures[texture_type_normal].gl_texture_id);
+	//need a second texture here
 	glBindVertexArray(game_resources.vaos[QUAD_VAO]);
 	//texture location?
 	//elemetn count?
