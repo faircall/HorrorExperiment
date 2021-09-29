@@ -190,10 +190,15 @@ void draw_texture_fullscreen_with_normal(GlobalRenderer global_renderer, GameRes
 	glUniform3f(game_resources.shader_uniforms[QUAD_LIGHT_UNIFORM], light_pos.x, light_pos.y, light_pos.z);
 	//glUniform1i(game_resources.shader_uniforms[QUAD_TEXTURE_UNIFORM], 0);
 	//i I think it's gonna be this guy
+
+	//multi-texturing requires sending a uniform in
+	glUniform1i(game_resources.shader_uniforms[QUAD_TEXTURE_UNIFORM], 0);
+	glUniform1i(game_resources.shader_uniforms[QUAD_NORMAL_UNIFORM], 1);
 	glActiveTexture(GL_TEXTURE0);	
 	glBindTexture(GL_TEXTURE_2D, game_resources.textures[texture_type].gl_texture_id);
 	glActiveTexture(GL_TEXTURE1);	
 	glBindTexture(GL_TEXTURE_2D, game_resources.textures[texture_type_normal].gl_texture_id);
+
 	//need a second texture here
 	glBindVertexArray(game_resources.vaos[QUAD_VAO]);
 	//texture location?

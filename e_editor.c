@@ -6,22 +6,31 @@
 
 /**
  * TODO:
+ * 
  * Could add support for polygons rather than
  * just rects
  *
  *
  * how to do fill-polygon region? try scanline
  *
+ * so the problem here is I've inserted them in order of appearance,
+ * rather than by co-ordinates.
+ * 
  * step one- toggle between buffers
  * then have option to fill
  *
  * make a new struct to hold selection BUFFERS to track the count also
+ *
+ * TODO:
+ * 
  * 
  * TODO:
- * write the shader for normal maps!
+ * 
  * also clean up the ui for how you have to select each selection etc
  * 
  * */
+
+
 
 typedef struct {
     int x;
@@ -310,9 +319,9 @@ int32 vec3_to_int32(Vec3 a)
 
     int32 result = 0x000000ff;
     
-    int32 r = red_real;
-    int32 g = green_real;
-    int32 b = blue_real;//this is not working right
+    int32 r = (int)red_real;
+    int32 g = (int)green_real;
+    int32 b = (int)blue_real;//this is not working right
 
     printf("the real values were %f %f %f\n",  red_real, green_real, blue_real);
 
@@ -321,13 +330,14 @@ int32 vec3_to_int32(Vec3 a)
 
     //this might still be wrong?
     r = r << 6*4;//note that it shifts bits, not bytes! One hex "bit" (hit?) is 4 bits
-    g = g << 4*4;
+    g = g << 4*4;//is it?
     b = b << 2*4;
 
+    //what?
     printf("and after we have red: %d, green: %d, blue: %d values \n", r, g, b);
 
     result = result + r + g + b;
-
+    //why is everything always yellow?
     return result;
 
 }
@@ -359,7 +369,7 @@ void save_normals(Selection_Buffer *selection_buffers, int selection_buffers_cou
 
     for (int i = 0; i < width; i++) {
 	for (int j = 0; j < height; j++) {
-	    image_buffer[j*width + i] = 0x00000000;
+	    image_buffer[j*width + i] = 0xffffffff;
 	}
     }
 
@@ -391,10 +401,12 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
     //a VERY nice side effect
     //of using static variables here is that
     //the persist even when we switch states (e.g to collision).
-    //of course, the downside is we potentially leak memory
+    //of course, the downside is we use more memory (specifically in the data segment)
     //so we should eventually switch all this over to pre-allocated memory
 
     //todo: able to delete a selection
+    //todo: be able to add more than one selection
+    //something is not working correctly here
     
     SDL_Event event;
     static int texture_counter = 0;
@@ -404,7 +416,7 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
     static Mouse_Grid_Result selecting_start = {0, 0};
     
     static int selection_buffers_count = 0;
-    static int selection_buffers_size = 2;
+    static int selection_buffers_size = 32;
     static Selection_Buffer *selection_buffers = NULL;
     static bool initialized_selection_buffers = false;
     static int buffer_counter = 0;
@@ -433,7 +445,7 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 
     TextureResult texture_result = game_resources->textures[texture_counter];
     //get grid-line info to render grid lines
-    int32 scale = 8;
+    int32 scale = 4;
     //why minus
     int32 dest_x = (SCREENWIDTH/2) - (scale*texture_result.im_width/2);
     int32 dest_y = (SCREENHEIGHT/2) - (scale*texture_result.im_height/2);
@@ -646,6 +658,7 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 	SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0x00, 0xff, 0x10);
 	Selection_Buffer selection_buffer = selection_buffers[selection_buffers_count];
 	for (int i = 0; i < selection_buffer.count; i++) {
+	    SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0x00, 0xff, 0x10);
 	    SDL_Rect normal_cell = rect_init(grid_start_x + selection_buffer.buffer[i].x*scale, grid_start_y + selection_buffer.buffer[i].y*scale, scale, scale);
 
 	    SDL_RenderDrawRect(sdl_renderer, &normal_cell);
@@ -660,7 +673,9 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 	    SDL_SetRenderDrawColor(sdl_renderer, 0x00, 0xff, 0xff, 0x10);
 	} else {
 	    //draw the color as a normal
-	    SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0x00, 0x10);
+	    float color_scale = (float)i / (float)selection_buffers_count;
+	    int red = 255 * color_scale;
+	    SDL_SetRenderDrawColor(sdl_renderer, red, 0xff, 0x00, 0x10);
 	}
 	for (int j = 0; j < selection_buffers[i].count; j++) {
 
