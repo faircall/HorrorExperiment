@@ -11,7 +11,7 @@
  * just rects
  *
  *
- * how to do fill-polygon region? try scanline
+ * how to do fill-polygon region? try scanline YESSSSS
  *
  * so the problem here is I've inserted them in order of appearance,
  * rather than by co-ordinates.
@@ -35,6 +35,7 @@
 typedef struct {
     int x;
     int y;
+    bool32 active;
 } Mouse_Grid_Result;
 
 
@@ -48,6 +49,10 @@ typedef struct {
 int32 vec3_to_int32(Vec3 a);
 
 Mouse_Grid_Result get_mouse_grid(int mouse_x, int mouse_y, uint grid_width, uint grid_height);
+
+void scanline_fill(Mouse_Grid_Result *selection_buffer, int width, int height);
+
+void clear_selection_buffer(Mouse_Grid_Result *buffer, int width, int height);
 
 void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game_resources, int32 *mouse_x, int32 *mouse_y, bool *g_running, EDITOR_STATE *editor_state);
 
@@ -277,13 +282,43 @@ Mouse_Grid_Result get_mouse_grid(int32 mouse_x, int32 mouse_y, int32 grid_spacin
     return result;
 }
 
-void scanline_fill(Selection_Buffer *selection_buffer)
+void scanline_fill(Mouse_Grid_Result *buffer, int width, int height)
 {
+    
     //step one get y-min y-max
 
     //we need to check if the selection buffer is fillable, i.e a closed polygon shape
 
     //does every cell have at least 2 neighbouring?
+    for (int i = 0; i < height; i++) {
+	int x_min = 0;
+	int y_min = 0;
+	int x_max = 0;
+	int y_max = 0;
+	Mouse_Grid_Result start, end;
+	bool32 found_start = 0;
+	bool32 found_end = 0;
+	for (int j = 0; j < width; j++) {
+	    Mouse_Grid_Result current = buffer[i * width + j];
+	    if (current.active && !found_start) {
+		start = current;
+		found_start = 1;
+		continue;
+	    }
+	    if (current.active && found_start) {
+		end = current;
+		found_end = 1;
+		continue;
+	    }
+	}
+	if (found_start && found_end) {
+	    //fill if we have a start and end
+	    for (int j = start.x; j < end.x; j++) {
+		Mouse_Grid_Result add = {.x = j, .y = i, .active = 1};
+		buffer[i * width + j] = add;
+	    }
+	}
+    }
 }
 
 Vec3 vec2_to_vec3_normal(Vec2 vec2_normal)
@@ -495,6 +530,11 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 		
 	    }
 
+	    if (event.key.keysym.scancode == SDL_SCANCODE_F) {
+		//fill!
+		scanline_fill(selection_buffers[buffer_counter].buffer, texture_result.im_width, texture_result.im_height);
+	    }
+
 	    if (event.key.keysym.scancode == SDL_SCANCODE_S) {
 		want_save = true;
 		for (int i = 0; i < selection_buffers_count; i++) {
@@ -517,10 +557,13 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 		    selecting = true;
 		    //actually want this to be a CELL not a vec
 		    selecting_start = get_mouse_grid(*mouse_x, *mouse_y, scale, scale, grid_start_x, grid_start_y, grid_end_x, grid_end_y);
+		    selecting_start.active = 1;
 		    selection_buffers[selection_buffers_count].count = 0;
 		    selection_buffers[selection_buffers_count].vec3_value = vec3_init(0.0f, 0.0f, 0.0f);
 		    selection_buffers[selection_buffers_count].buffer = (Mouse_Grid_Result*)malloc(sizeof(Mouse_Grid_Result) * texture_result.im_width * texture_result.im_height);
-		    selection_buffers[selection_buffers_count].buffer[selection_buffers[selection_buffers_count].count] = selecting_start;
+		    //init it to 'empty' results
+		    clear_selection_buffer(selection_buffers[selection_buffers_count].buffer, texture_result.im_width, texture_result.im_height);
+		    selection_buffers[selection_buffers_count].buffer[texture_result.im_width * selecting_start.y + selecting_start.x] = selecting_start;
 		    selection_buffers[selection_buffers_count].count++;
 
 		} else {
@@ -610,7 +653,8 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
     if (selecting) {
 	if (grid_result.x != selecting_start.x || grid_result.y != selecting_start.y) {
 	    selecting_start = grid_result;
-	    selection_buffers[selection_buffers_count].buffer[selection_buffers[selection_buffers_count].count] = selecting_start;
+	    selecting_start.active = 1;
+	    selection_buffers[selection_buffers_count].buffer[selecting_start.y * texture_result.im_width + selecting_start.x] = selecting_start;
 	    selection_buffers[selection_buffers_count].count++;
 	    if (selection_buffers[selection_buffers_count].count>= texture_result.im_width * texture_result.im_height) {
 		selection_buffers[selection_buffers_count].count= texture_result.im_width * texture_result.im_height; //prevent buffer overflow, though handle this better
@@ -647,6 +691,7 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 	SDL_RenderDrawLine(sdl_renderer, grid_start_x, dest_y + pos_y, grid_end_x, dest_y + pos_y);
     }
 
+    //why check this?
     if (mouse_grid_x != -1 && mouse_grid_y != -1) {
 	SDL_Rect normal_cell = rect_init(grid_start_x + mouse_grid_x*scale, grid_start_y + mouse_grid_y*scale, scale, scale);
 	SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0x00, 0x00, 0x10);
@@ -657,11 +702,12 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
     if (selecting) {
 	SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0x00, 0xff, 0x10);
 	Selection_Buffer selection_buffer = selection_buffers[selection_buffers_count];
-	for (int i = 0; i < selection_buffer.count; i++) {
+	for (int i = 0; i < texture_result.im_width * texture_result.im_height; i++) {
 	    SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0x00, 0xff, 0x10);
 	    SDL_Rect normal_cell = rect_init(grid_start_x + selection_buffer.buffer[i].x*scale, grid_start_y + selection_buffer.buffer[i].y*scale, scale, scale);
-
-	    SDL_RenderDrawRect(sdl_renderer, &normal_cell);
+	    if (selection_buffer.buffer[i].active) {
+		SDL_RenderDrawRect(sdl_renderer, &normal_cell);
+	    }
 	    
 	}
 
@@ -677,11 +723,15 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 	    int red = 255 * color_scale;
 	    SDL_SetRenderDrawColor(sdl_renderer, red, 0xff, 0x00, 0x10);
 	}
-	for (int j = 0; j < selection_buffers[i].count; j++) {
+	//we should do this with row/col representation
+	for (int j = 0; j < texture_result.im_width * texture_result.im_height; j++) {
 
 	    SDL_Rect normal_cell = rect_init(grid_start_x + selection_buffers[i].buffer[j].x*scale, grid_start_y + selection_buffers[i].buffer[j].y*scale, scale, scale);
 	    //SDL_SetRenderDrawColor(sdl_renderer, 0xff, 0xff, 0x00, 0x10);
-	    SDL_RenderDrawRect(sdl_renderer, &normal_cell);
+
+	    if (selection_buffers[i].buffer[j].active) {
+		SDL_RenderDrawRect(sdl_renderer, &normal_cell);
+	    }
 	}
     }
 
@@ -708,5 +758,15 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
     
     SDL_RenderPresent(sdl_renderer);
     
+}
+
+void clear_selection_buffer(Mouse_Grid_Result *buffer, int width, int height)
+{
+    for (int i = 0; i < height; i++) {
+	for (int j= 0; j < width; j++) {
+	    Mouse_Grid_Result result = {.x = 0, .y= 0, .active = 0};
+	    buffer[i * width + j] = result;
+	}
+    }
 }
 
