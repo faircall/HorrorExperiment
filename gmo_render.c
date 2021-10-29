@@ -142,6 +142,9 @@ void draw_texture_fullscreen(GlobalRenderer global_renderer, GameResource game_r
 	 * Warning!!
 	 * Placeholder!
 	 * Not actually correct here!!!! */
+
+	glClearColor(0.5, 0.5, 0.5, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
 	glUseProgram(game_resources.shaders[QUAD_SHADER]);
 	Mat4 mat4_identity = mat4_create_identity();
 	//what do we scale BY exactly?
@@ -156,6 +159,11 @@ void draw_texture_fullscreen(GlobalRenderer global_renderer, GameResource game_r
 	//glUniform1i(game_resources.shader_uniforms[QUAD_TEXTURE_UNIFORM], 0);
 	//i I think it's gonna be this guy
 	//glActiveTexture(GL_TEXTURE0);
+
+	//the 'bug' here is just that I change dthe shader itself
+	glUniform1i(game_resources.shader_uniforms[QUAD_TEXTURE_UNIFORM], 0);
+	glActiveTexture(GL_TEXTURE0);
+		    
 	glBindTexture(GL_TEXTURE_2D, game_resources.textures[texture_type].gl_texture_id);  	
 	glBindVertexArray(game_resources.vaos[QUAD_VAO]);
 	//texture location?
@@ -167,6 +175,8 @@ void draw_texture_fullscreen(GlobalRenderer global_renderer, GameResource game_r
 
 void draw_texture_fullscreen_with_normal(GlobalRenderer global_renderer, GameResource game_resources, TextureType texture_type, TextureType texture_type_normal, Vec3 light_pos)
 {
+    // this is changing some global state which is carrying over to
+    // the next function call of draaw_texture_fullscreen
     if (global_renderer.active_renderer == SOFTWARE_RENDERER) {
 	SDL_RenderCopy(global_renderer.sdl_renderer, game_resources.textures[texture_type].texture, NULL, NULL);
 
@@ -176,7 +186,9 @@ void draw_texture_fullscreen_with_normal(GlobalRenderer global_renderer, GameRes
 	 * Warning!!
 	 * Placeholder!
 	 * Not actually correct here!!!! */
-	glUseProgram(game_resources.shaders[QUAD_SHADER]);
+	glClearColor(0.5, 0.5, 0.5, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glUseProgram(game_resources.shaders[QUAD_NORMAL_SHADER]);
 	Mat4 mat4_identity = mat4_create_identity();
 	//what do we scale BY exactly?
 	//just assume height is 'constant' and
@@ -186,13 +198,13 @@ void draw_texture_fullscreen_with_normal(GlobalRenderer global_renderer, GameRes
 	Vec3 translation_vector = vec3_init(0.0f, 0.0f, x_scale_ratio);
 	Mat4 translation = mat4_create_translation(translation_vector);
 	Mat4 transform = mat4_mult(translation, scale_transform);
-	glUniformMatrix4fv(game_resources.shader_uniforms[QUAD_TRANSFORM_UNIFORM], 1, GL_FALSE, transform.elements);
+	glUniformMatrix4fv(game_resources.shader_uniforms[QUAD_NORMAL_TRANSFORM_UNIFORM], 1, GL_FALSE, transform.elements);
 	glUniform3f(game_resources.shader_uniforms[QUAD_LIGHT_UNIFORM], light_pos.x, light_pos.y, light_pos.z);
 	//glUniform1i(game_resources.shader_uniforms[QUAD_TEXTURE_UNIFORM], 0);
 	//i I think it's gonna be this guy
 
 	//multi-texturing requires sending a uniform in
-	glUniform1i(game_resources.shader_uniforms[QUAD_TEXTURE_UNIFORM], 0);
+	glUniform1i(game_resources.shader_uniforms[QUAD_NORMAL_TEXTURE_UNIFORM], 0);
 	glUniform1i(game_resources.shader_uniforms[QUAD_NORMAL_UNIFORM], 1);
 	glActiveTexture(GL_TEXTURE0);	
 	glBindTexture(GL_TEXTURE_2D, game_resources.textures[texture_type].gl_texture_id);

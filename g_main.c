@@ -181,6 +181,10 @@ int main(int argc, char **argv)
 
 
     //pull this out to a game_state init function
+
+
+    //todo: menu
+    
     GameState game_state;
     //GAME_STATE starting_state = GAME_EDITOR;
     GAME_STATE starting_state = GAME_TITLE;
@@ -213,7 +217,7 @@ int main(int argc, char **argv)
 	total_time_ms = current_time / 1000.0f;
 	dt = (current_time - last_time)/1000.0f;
 	float fps = 1.0f/dt;
-	printf("%f frames per second\n", fps);
+	//printf("%f frames per second\n", fps);
 	last_time = current_time;
 	game_state.dt = dt;
 	game_state.total_time_ms = total_time_ms;

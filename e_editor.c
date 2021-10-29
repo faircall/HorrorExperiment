@@ -6,6 +6,8 @@
 
 /**
  * TODO:
+ *
+ * Fix the vec2_to_vec3 function
  * 
  * Could add support for polygons rather than
  * just rects
@@ -46,7 +48,7 @@ typedef struct {
     Vec3 vec3_value;
 } Selection_Buffer;
 
-int32 vec3_to_int32(Vec3 a);
+uint32 vec3_to_int32(Vec3 a);
 
 Mouse_Grid_Result get_mouse_grid(int mouse_x, int mouse_y, uint grid_width, uint grid_height);
 
@@ -330,7 +332,7 @@ Vec3 vec2_to_vec3_normal(Vec2 vec2_normal)
     
     float x_comp = vec2_normal.x;
     float y_comp = vec2_normal.y;
-    float z_comp = 100.0f - mag;
+    float z_comp = 100.0f - mag;//very suspicious
 
     result.x = x_comp;
     result.y = y_comp;
@@ -344,7 +346,7 @@ Vec3 vec2_to_vec3_normal(Vec2 vec2_normal)
     return result;
 }
 
-int32 vec3_to_int32(Vec3 a)
+uint32 vec3_to_int32(Vec3 a)
 {
 
     //don't think this is working right
@@ -352,11 +354,11 @@ int32 vec3_to_int32(Vec3 a)
     real32 green_real = 127.5 + a.y*127.5;
     real32 blue_real = 127.5 + a.z*127.5;
 
-    int32 result = 0x000000ff;
+    uint32 result = 0x000000ff;
     
-    int32 r = (int)red_real;
-    int32 g = (int)green_real;
-    int32 b = (int)blue_real;//this is not working right
+    uint32 r = (uint32)red_real;
+    uint32 g = (uint32)green_real;
+    uint32 b = (uint32)blue_real;//this is not working right
 
     printf("the real values were %f %f %f\n",  red_real, green_real, blue_real);
 
@@ -410,8 +412,21 @@ void save_normals(Selection_Buffer *selection_buffers, int selection_buffers_cou
 
     for (int i = 0; i < selection_buffers_count; i++) {
 	Selection_Buffer current_selection_buffer = selection_buffers[i];
+
+	//this isn't packed right on blue
 	int32 packed_normal_value = vec3_to_int32(current_selection_buffer.vec3_value);
+
+	for (int row = 0; row < height; row++) {
+	    for (int col = 0; col < width; col++) {
+		Mouse_Grid_Result current_grid = current_selection_buffer.buffer[row * width + col];
+		if (current_grid.active) {
+		    image_buffer[row*width + col] = packed_normal_value;
+		}
+	    }
+	}
+	
 	for (int j = 0; j < current_selection_buffer.count; j++) {
+	    //different now
 	    Mouse_Grid_Result current_grid = current_selection_buffer.buffer[j];	    
 	    image_buffer[current_grid.y*width + current_grid.x] = packed_normal_value;
 	}
@@ -537,11 +552,12 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 
 	    if (event.key.keysym.scancode == SDL_SCANCODE_S) {
 		want_save = true;
-		for (int i = 0; i < selection_buffers_count; i++) {
-		    //vec3 current_vec3 = selection_buffers[i].vec3_value;
-		    save_normals(selection_buffers, selection_buffers_count, texture_result.im_width, texture_result.im_height);
+		save_normals(selection_buffers, selection_buffers_count, texture_result.im_width, texture_result.im_height);
+		//for (int i = 0; i < selection_buffers_count; i++) {
+		//    //vec3 current_vec3 = selection_buffers[i].vec3_value;
+		//    save_normals(selection_buffers, selection_buffers_count, texture_result.im_width, texture_result.im_height);
 		    //int32 packed_pixel = vec3_to_int32(current_vec3);
-		}
+		//}
 	    }
 	}
 
@@ -614,6 +630,7 @@ void normal_map_update_and_render(SDL_Renderer *sdl_renderer, GameResource *game
 		    started_normal = false;
 
 		    //convert the vec2 to a vec3
+		    printf("normal to draw has magnitude %f\n", vec2_mag(normal_to_draw));
 		    Vec3 normal_to_add = vec2_to_vec3_normal(normal_to_draw);
 		    //printf("normal to add was %f %f %f\n", normal_to_add.x, normal_to_add.y, normal_to_add.z);
 		    

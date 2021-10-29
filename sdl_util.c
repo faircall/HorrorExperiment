@@ -16,10 +16,16 @@ char *g_texture_names[NUM_TEX] = {
 };
 
 char *g_shader_names[NUM_SHADERS] = {
-    "shaders/quad"
+    "shaders/quad",
+    "shaders/quad_normal"
 };
 
 char *g_shader_uniforms[NUM_SHADER_UNIFORMS] = {
+    //no normals
+    "perspective",
+    "transform",
+    "texture_to_draw",
+    //normals
     "perspective",
     "transform",
     "texture_to_draw",
@@ -153,15 +159,20 @@ uint32 *load_shader_programs(void)
 int32 *load_shader_uniforms(GameResource game_resources)
 {
     //need to add a cross-reference table here (assoc. array?)
+
+    
     int32 *result = (int32*)malloc(sizeof(int32) * NUM_SHADER_UNIFORMS);
 
     for (int i = 0; i < NUM_SHADER_UNIFORMS; i++) {
 	//somethign like this
-	if (i >= QUAD_PERSPECTIVE_UNIFORM && i <= QUAD_LIGHT_UNIFORM) {
+	if (i >= QUAD_PERSPECTIVE_UNIFORM && i <= QUAD_TEXTURE_UNIFORM) {
 	    result[i] = glGetUniformLocation(game_resources.shaders[QUAD_SHADER], g_shader_uniforms[i]);
+	} else if (i >= QUAD_NORMAL_PERSPECTIVE_UNIFORM && i <= QUAD_LIGHT_UNIFORM) {
+	    result[i] = glGetUniformLocation(game_resources.shaders[QUAD_NORMAL_SHADER], g_shader_uniforms[i]);
 	} else {
 	    return NULL;
 	}
+
 
     }
     
@@ -224,5 +235,7 @@ uint32 *load_vbos(GameResource game_resources)
 void set_static_uniforms(GlobalRenderer global_renderer, GameResource game_resources)
 {
     glUseProgram(game_resources.shaders[QUAD_SHADER]);
-    glUniformMatrix4fv(game_resources.shader_uniforms[QUAD_SHADER], 1, GL_FALSE, global_renderer.perspective_matrix.elements);
+    glUniformMatrix4fv(game_resources.shader_uniforms[QUAD_PERSPECTIVE_UNIFORM], 1, GL_FALSE, global_renderer.perspective_matrix.elements);
+    glUseProgram(game_resources.shaders[QUAD_NORMAL_SHADER]);
+    glUniformMatrix4fv(game_resources.shader_uniforms[QUAD_NORMAL_PERSPECTIVE_UNIFORM], 1, GL_FALSE, global_renderer.perspective_matrix.elements);
 }

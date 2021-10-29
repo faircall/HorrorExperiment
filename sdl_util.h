@@ -29,8 +29,10 @@ typedef enum {
     NUM_TEX,
 } TextureType;
 
+//in order of shader_names
 typedef enum {
     QUAD_SHADER,
+    QUAD_NORMAL_SHADER,
     NUM_SHADERS,
 } ShaderType;
 
@@ -50,9 +52,14 @@ typedef enum {
 } EboType;
 
 typedef enum {
+    //no normals
     QUAD_PERSPECTIVE_UNIFORM,
     QUAD_TRANSFORM_UNIFORM,
     QUAD_TEXTURE_UNIFORM,
+    //normals
+    QUAD_NORMAL_PERSPECTIVE_UNIFORM,
+    QUAD_NORMAL_TRANSFORM_UNIFORM,
+    QUAD_NORMAL_TEXTURE_UNIFORM,
     QUAD_NORMAL_UNIFORM,
     QUAD_LIGHT_UNIFORM,
     NUM_SHADER_UNIFORMS
