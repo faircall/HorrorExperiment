@@ -22,6 +22,12 @@ void draw_texture_fullscreen_with_normal(GlobalRenderer global_renderer, GameRes
 
 void draw_rotated_texture_at(GlobalRenderer global_renderer, GameResource game_resources, TextureType texture_type, float dest_x, float dest_y, float source_x, float source_y, float scale_x, float scale_y, float angle);
 
+void draw_texture_with_normal_at(GlobalRenderer global_renderer, GameResource game_resources, TextureType texture_type, TextureType texture_type_normal, float dest_x, float dest_y, float source_x, float source_y, float scale_x, float scale_y, Vec3 light_pos);
+
+void draw_fullscreen_tilemap(GlobalRenderer global_renderer, GameResource game_resources, TextureType texture_type);
+
+void draw_shadow_texture_at(GlobalRenderer global_renderer, GameResource game_resources, TextureType texture_type, float dest_x, float dest_y, float source_x, float source_y, float scale_x, float scale_y);
+
 void update_screen(GlobalRenderer global_renderer);
 
 

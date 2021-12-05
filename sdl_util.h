@@ -25,13 +25,16 @@ typedef enum {
     ROD_TEX,
     ROD_MID_TEX,
     RIPPLE_TEX,
+    GRASS_TEX,
     OCEAN_TEX_NORMAL,
     NUM_TEX,
 } TextureType;
 
+
 //in order of shader_names
 typedef enum {
     QUAD_SHADER,
+    QUAD_SHADOW_SHADER,
     QUAD_NORMAL_SHADER,
     NUM_SHADERS,
 } ShaderType;
@@ -56,6 +59,10 @@ typedef enum {
     QUAD_PERSPECTIVE_UNIFORM,
     QUAD_TRANSFORM_UNIFORM,
     QUAD_TEXTURE_UNIFORM,
+    //shadows
+    QUAD_SHADOW_PERSPECTIVE_UNIFORM,
+    QUAD_SHADOW_TRANSFORM_UNIFORM,
+    QUAD_SHADOW_TEXTURE_UNIFORM,
     //normals
     QUAD_NORMAL_PERSPECTIVE_UNIFORM,
     QUAD_NORMAL_TRANSFORM_UNIFORM,

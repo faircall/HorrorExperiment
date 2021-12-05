@@ -2,8 +2,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-
-
 char *g_texture_names[NUM_TEX] = {
     "art/yuji_rough.png",
     "art/ocean_bg.png",
@@ -12,16 +10,22 @@ char *g_texture_names[NUM_TEX] = {
     "art/fishing_pole_temp.png",
     "art/fishing_pole_middle_temp.png",
     "art/ripple-sheet.png",
+    "art/badgrass.png",
     "art/firstpng.png",
 };
 
 char *g_shader_names[NUM_SHADERS] = {
     "shaders/quad",
+    "shaders/quad_shadow",
     "shaders/quad_normal"
 };
 
 char *g_shader_uniforms[NUM_SHADER_UNIFORMS] = {
     //no normals
+    "perspective",
+    "transform",
+    "texture_to_draw",
+    //shadows
     "perspective",
     "transform",
     "texture_to_draw",
@@ -167,6 +171,8 @@ int32 *load_shader_uniforms(GameResource game_resources)
 	//somethign like this
 	if (i >= QUAD_PERSPECTIVE_UNIFORM && i <= QUAD_TEXTURE_UNIFORM) {
 	    result[i] = glGetUniformLocation(game_resources.shaders[QUAD_SHADER], g_shader_uniforms[i]);
+	} else if(i >= QUAD_SHADOW_PERSPECTIVE_UNIFORM && i <= QUAD_SHADOW_TEXTURE_UNIFORM) {
+	    result[i] = glGetUniformLocation(game_resources.shaders[QUAD_SHADOW_SHADER], g_shader_uniforms[i]);
 	} else if (i >= QUAD_NORMAL_PERSPECTIVE_UNIFORM && i <= QUAD_LIGHT_UNIFORM) {
 	    result[i] = glGetUniformLocation(game_resources.shaders[QUAD_NORMAL_SHADER], g_shader_uniforms[i]);
 	} else {
@@ -236,6 +242,8 @@ void set_static_uniforms(GlobalRenderer global_renderer, GameResource game_resou
 {
     glUseProgram(game_resources.shaders[QUAD_SHADER]);
     glUniformMatrix4fv(game_resources.shader_uniforms[QUAD_PERSPECTIVE_UNIFORM], 1, GL_FALSE, global_renderer.perspective_matrix.elements);
+    glUseProgram(game_resources.shaders[QUAD_SHADOW_SHADER]);
+    glUniformMatrix4fv(game_resources.shader_uniforms[QUAD_SHADOW_PERSPECTIVE_UNIFORM], 1, GL_FALSE, global_renderer.perspective_matrix.elements);
     glUseProgram(game_resources.shaders[QUAD_NORMAL_SHADER]);
     glUniformMatrix4fv(game_resources.shader_uniforms[QUAD_NORMAL_PERSPECTIVE_UNIFORM], 1, GL_FALSE, global_renderer.perspective_matrix.elements);
 }

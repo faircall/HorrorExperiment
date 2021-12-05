@@ -40,9 +40,12 @@ void do_title(GameState *game_state, GlobalRenderer *global_renderer, GameResour
 	//how to load the normal map?
 		
 	set_background_color(*global_renderer, 0xbf, 0x00, 0xaf, 0xff);
-	/*
-	 * Make this into a draw_texture_fullscreen_with_normal call
-	 */
+
+	//todo animate the waves
+
+	//hrmm
+	
+
 	//draw_texture_fullscreen(*global_renderer, game_resources, OCEAN_TEX);
 	draw_texture_fullscreen_with_normal(*global_renderer, game_resources, OCEAN_TEX, OCEAN_TEX_NORMAL, light);
 
@@ -96,21 +99,15 @@ void do_lake(GameState *game_state, GlobalRenderer *global_renderer, GameResourc
 	    }
 	    if (sdl_event.type == SDL_KEYDOWN) {
 		if (sdl_event.key.keysym.scancode == SDL_SCANCODE_SPACE) {
-		    game_state->current_state = GAME_FISHING;
+		    //game_state->current_state = GAME_FISHING;
+		    game_state->current_state = GAME_WALKING;
 		    //alSourceStop(al_source);
 		}
 	    }
 	}
 
 	//todo: animate the water
-	#if 0
-	SDL_SetRenderDrawColor(sdl_renderer, 0xbf, 0x00, 0xaf, 0xff);
-	//make this modular series of calls with more individual sprites
-	//will look way better
-	SDL_RenderClear(sdl_renderer);
-	SDL_RenderCopy(sdl_renderer, game_resources.textures[LAKE_TEX].texture, NULL, NULL);
-	SDL_RenderPresent(sdl_renderer);
-	#endif 
+
 	set_background_color(*global_renderer, 0xbf, 0x00, 0xaf, 0xff);
 	draw_texture_fullscreen(*global_renderer, game_resources, LAKE_TEX);
 	update_screen(*global_renderer);
@@ -201,7 +198,11 @@ void do_fishing(GameState *game_state, GlobalRenderer *global_renderer, GameReso
 		}
 
 		    //alSourceStop(al_source);
-		}
+	    }
+	    if (sdl_event.key.keysym.scancode == SDL_SCANCODE_SPACE) {
+		game_state->current_state = GAME_WALKING;
+		//alSourceStop(al_source);
+	    }
 	}
     }
 
@@ -243,11 +244,6 @@ void do_fishing(GameState *game_state, GlobalRenderer *global_renderer, GameReso
 	}
     }
 
-#if 0
-    SDL_SetRenderDrawColor(sdl_renderer, 0xbf, 0x00, 0xaf, 0xff);
-    SDL_RenderClear(sdl_renderer);
-    SDL_RenderCopy(sdl_renderer, game_resources.textures[LAKE_FISHING_TEX].texture, NULL, NULL);
-#endif
 
     draw_texture_fullscreen(*global_renderer, game_resources, LAKE_FISHING_TEX);
 	
@@ -321,3 +317,90 @@ void do_fishing(GameState *game_state, GlobalRenderer *global_renderer, GameReso
     //render title
 
 }
+
+void do_walking(GameState *game_state, GlobalRenderer *global_renderer, GameResource game_resources, bool *g_running)
+{
+    // start off
+    // with some static vars for prototyping?
+    float dt = game_state->dt;
+    static Vec2 player_position = {.x = 20.0f, .y = 200.0f};
+    static Vec2 player_velocity = {.x = 0.0f, .y = 0.0f};
+    float player_speed = 150.0f;
+    float max_speed = 0.1f;
+    Vec2 player_heading = {.x = 0.0f, .y = 0.0f};
+
+    SDL_Event sdl_event;
+
+    const Uint8 *keys = SDL_GetKeyboardState(NULL);
+
+    if (keys[SDL_SCANCODE_W]) {
+	player_heading.y = -1.0f;
+    }
+    if (keys[SDL_SCANCODE_S]) {
+	player_heading.y = 1.0f;
+    }
+    if (keys[SDL_SCANCODE_A]) {
+	player_heading.x = -1.0f;
+    }
+    if (keys[SDL_SCANCODE_D]) {
+	player_heading.x = 1.0f;
+    }
+
+    while (SDL_PollEvent(&sdl_event)) {
+	if (sdl_event.type == SDL_QUIT) {
+	    *g_running = false;
+	    break;
+	}
+    }
+
+
+    // something messed up with vertical directions?
+    // possibly an OPENGL issue though
+    // in particular, width/height are both -1 to 1, 
+    // but height is much smaller
+    //player_heading = vec2_normalize(player_heading);
+    player_velocity = vec2_add(player_velocity, vec2_scale(player_heading, player_speed*dt));
+    if (vec2_mag(player_velocity) >= max_speed) {
+	player_velocity = vec2_normalize(player_velocity);
+	player_velocity = vec2_scale(player_velocity, max_speed);
+    }
+
+    printf("current pos is, x: %f y: %f\n", player_position.x, player_position.y);
+
+
+    player_position = vec2_add(player_position, player_velocity);
+    Vec2 player_friction = vec2_scale(player_velocity, -1.5f);
+    player_velocity = vec2_add(player_velocity, vec2_scale(player_friction,dt));
+    //player_position = vec2_add(player_position, player_velocity);
+
+    set_background_color(*global_renderer, 0xbf, 0x00, 0xaf, 0xff);
+    //draw_texture_fullscreen(*global_renderer, game_resources, LAKE_FISHING_TEX);
+    TextureResult grass_tex = game_resources.textures[GRASS_TEX];
+
+    
+    int tiles_across = SCREENWIDTH / grass_tex.im_width;
+    int tiles_down = SCREENHEIGHT / grass_tex.im_height;
+
+    //this totally tanks our framerate in OpenGL!!
+    //need to learn the batched version I think
+    #if 0
+    for (int i = 0; i <= tiles_across; i++) {
+	for (int j = 0; j <= tiles_down; j++) {
+	    draw_texture_at(*global_renderer, game_resources, GRASS_TEX, i*grass_tex.im_width, j*grass_tex.im_height, 0.0f, 0.0f, 1.0f, 1.0f);
+	}
+    }
+    #endif
+    draw_fullscreen_tilemap(*global_renderer, game_resources, GRASS_TEX);
+    
+    draw_texture_at(*global_renderer, game_resources, YUJI_TEX, player_position.x, player_position.y, 0.0f, 0.0f, 1.0f, 1.0f);
+
+    draw_shadow_texture_at(*global_renderer, game_resources, YUJI_TEX, player_position.x + 30.0f, player_position.y + 30.0f, 0.0f, 0.0f, 1.0f, 1.0f);
+
+    update_screen(*global_renderer);
+    
+    
+}
+
+
+
+

@@ -217,7 +217,7 @@ int main(int argc, char **argv)
 	total_time_ms = current_time / 1000.0f;
 	dt = (current_time - last_time)/1000.0f;
 	float fps = 1.0f/dt;
-	//printf("%f frames per second\n", fps);
+	printf("%f frames per second\n", fps);
 	last_time = current_time;
 	game_state.dt = dt;
 	game_state.total_time_ms = total_time_ms;
@@ -378,6 +378,11 @@ void update_game_state(GameState *game_state, GlobalRenderer *global_renderer, G
     case GAME_FISHING:
     {
 	do_fishing(game_state, global_renderer, game_resources, g_running);
+	break;
+    }
+    case GAME_WALKING:
+    {
+	do_walking(game_state, global_renderer, game_resources, g_running);
 	break;
     }
 
